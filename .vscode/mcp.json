@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase",
+        "--project-ref=xewjbkmcvihgypwsfrxc"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_bf335643b37656581270dc1839543c8a0c8fec91",
+        "SUPABASE_PROJECT_REF": "xewjbkmcvihgypwsfrxc",
+        "SUPABASE_URL": "https://xewjbkmcvihgypwsfrxc.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhld2pia21jdmloZ3lwd3NmcnhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNjIxMDIsImV4cCI6MjA3MjkzODEwMn0.NrtzeuKnRGhYLHdDGqW40gGnTRXu_1T2EDpEc6HuO18",
+        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhld2pia21jdmloZ3lwd3NmcnhjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzM2MjEwMiwiZXhwIjoyMDcyOTM4MTAyfQ.IBUIOrfpY2_BLcwxGSMz_89fC-MvcPKgx9hyQvjjd6s",
+        "SUPABASE_REGION": "us-east-1"
+      }
+    }
+  }
+}
