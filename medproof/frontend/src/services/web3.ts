@@ -84,7 +84,14 @@ class Web3Service {
       }
 
       if (!this.state.provider) {
-        throw new Error('MetaMask not found. Please install MetaMask browser extension.');
+        throw new Error('MetaMask not found. Please install MetaMask browser extension and refresh the page.');
+      }
+
+      // Check if we're on the correct network
+      const network = await this.state.provider.getNetwork();
+      if (Number(network.chainId) !== BLOCKCHAIN_CONFIG.NETWORK_ID) {
+        console.log(`Switching to correct network (${BLOCKCHAIN_CONFIG.NETWORK_ID})...`);
+        await this.switchNetwork();
       }
 
       await this.state.provider.send('eth_requestAccounts', []);
@@ -140,13 +147,14 @@ class Web3Service {
           method: 'wallet_addEthereumChain',
           params: [{
             chainId: `0x${BLOCKCHAIN_CONFIG.NETWORK_ID.toString(16)}`,
-            chainName: 'Hardhat Local',
+            chainName: 'Sepolia Test Network',
             rpcUrls: [BLOCKCHAIN_CONFIG.RPC_URL],
             nativeCurrency: {
-              name: 'Ether',
+              name: 'Sepolia Ether',
               symbol: 'ETH',
               decimals: 18,
             },
+            blockExplorerUrls: ['https://sepolia.etherscan.io/'],
           }],
         });
       } else {
