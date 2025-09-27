@@ -11,6 +11,7 @@ const SyntheticMedicalData = require('./data/SyntheticMedicalData');
 const FHIRConnector = require('./fhir/FHIRConnector');
 // const MedicalProofGenerator = require('../../circuits/scripts/generate_proof');
 const MedicalProofGenerator = require('./proof/MedicalProofGenerator');
+const RealZKProofGenerator = require('./proof/RealZKProofGenerator');
 const ResearcherApplicationService = require('./services/ResearcherApplicationService');
 const OrganizationService = require('./services/OrganizationService');
 const HospitalDataAccessService = require('./services/HospitalDataAccessService');
@@ -38,6 +39,7 @@ const fhirConnector = new FHIRConnector({
     baseUrl: process.env.FHIR_BASE_URL || 'https://hapi.fhir.org/baseR4'
 });
 const proofGenerator = new MedicalProofGenerator();
+const realZKProofGenerator = new RealZKProofGenerator();
 const applicationService = new ResearcherApplicationService();
 const organizationService = new OrganizationService();
 const hospitalDataAccessService = new HospitalDataAccessService();
@@ -248,18 +250,16 @@ app.post('/api/generate-proof', async (req, res) => {
             });
         }
 
-        console.log(`Generating ZK proof for ${studyType} study`);
+        console.log(`🔐 Generating REAL ZK proof for ${studyType} study`);
 
         const salt = Math.floor(Math.random() * 1000000);
-        const proof = await proofGenerator.generateMedicalStatsProof(studyData, salt);
+        
+        // Use the real ZK proof generator with cryptographic operations
+        const proof = await realZKProofGenerator.generateMedicalStatsProof(studyData, salt);
 
-        // Add metadata
+        // Add additional metadata
         proof.metadata.studyType = studyType;
         proof.metadata.hospitalId = hospitalId;
-        proof.metadata.proofHash = require('crypto')
-            .createHash('sha256')
-            .update(JSON.stringify(proof.proof))
-            .digest('hex');
 
         res.json({
             success: true,
