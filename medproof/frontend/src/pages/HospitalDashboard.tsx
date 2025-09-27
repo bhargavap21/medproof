@@ -41,6 +41,7 @@ import {
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAPI } from '../hooks/useAPI';
 import { useWeb3 } from '../hooks/useWeb3';
+import ZKProofDisplay from '../components/ZKProofDisplay';
 
 const HospitalDashboard: React.FC = () => {
   const { hospitalId } = useParams<{ hospitalId: string }>();
@@ -472,67 +473,88 @@ const HospitalDashboard: React.FC = () => {
       <Dialog 
         open={showProofDialog} 
         onClose={() => setShowProofDialog(false)}
-        maxWidth="md" 
+        maxWidth="lg"
         fullWidth
+        PaperProps={{
+          sx: { minHeight: '80vh' }
+        }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
-          <VerifiedUser sx={{ mr: 1 }} />
-          Zero-Knowledge Proof Generated
-        </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ p: 0 }}>
           {zkProof && (
             <Box>
-              <Alert severity="success" sx={{ mb: 2 }}>
-                Proof generated successfully! This proof verifies your study results without revealing patient data.
-              </Alert>
-
-              {submissionResult && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  Proof successfully submitted to blockchain! Transaction hash: {submissionResult.transactionHash.slice(0, 16)}...
-                </Alert>
-              )}
-
+              {/* Wallet Connection Alerts */}
               {!isConnected && (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                  Connect your wallet to submit this proof to the blockchain.
+                <Alert severity="warning" sx={{ m: 3, mb: 2 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    <strong>Connect Wallet to Submit Proof</strong>
+                  </Typography>
+                  <Typography variant="body2">
+                    Connect your MetaMask wallet to submit this proof to the blockchain and make it publicly verifiable.
+                  </Typography>
                 </Alert>
               )}
 
               {isConnected && !isHospitalAuthorized(hospitalId || '') && (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                  Your wallet address is not authorized for this hospital. Please connect with an authorized address.
+                <Alert severity="warning" sx={{ m: 3, mb: 2 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    <strong>Wallet Not Authorized</strong>
+                  </Typography>
+                  <Typography variant="body2">
+                    Your wallet address is not authorized for this hospital. Please connect with an authorized address to submit proofs.
+                  </Typography>
                 </Alert>
               )}
-              
-              <Paper sx={{ p: 2, bgcolor: 'grey.50', mb: 2 }}>
-                <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                  Proof Hash: {zkProof.metadata.proofHash?.slice(0, 32)}...
-                </Typography>
-              </Paper>
 
-              <Typography variant="h6" gutterBottom>Proven Facts:</Typography>
-              <ul>
-                <li>Sample size: {zkProof.metadata.sampleSize} patients</li>
-                <li>Treatment efficacy: {zkProof.metadata.efficacyRate}%</li>
-                <li>Statistical significance: p = {zkProof.metadata.pValue}</li>
-                <li>Study meets research criteria: {zkProof.publicSignals[7] === 1 ? 'Yes' : 'No'}</li>
-              </ul>
+              {submissionResult && (
+                <Alert severity="success" sx={{ m: 3, mb: 2 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    <strong>🎉 Proof Successfully Submitted to Blockchain!</strong>
+                  </Typography>
+                  <Typography variant="body2">
+                    Your proof has been permanently recorded on the blockchain and is now publicly verifiable.
+                    Transaction: {submissionResult.transactionHash.slice(0, 16)}...
+                  </Typography>
+                </Alert>
+              )}
+
+              {/* Main Proof Display */}
+              <Box sx={{ p: 3 }}>
+                <ZKProofDisplay 
+                  proof={zkProof} 
+                  metadata={{
+                    ...zkProof.metadata,
+                    proofHash: zkProof.metadata?.proofHash || zkProof.proof?.proofHash,
+                    sampleSize: zkProof.metadata?.sampleSize || 
+                      (studyData?.outcomes?.statistics?.treatmentN + studyData?.outcomes?.statistics?.controlN),
+                    efficacyRate: zkProof.metadata?.efficacyRate || 
+                      Math.round((studyData?.outcomes?.statistics?.treatmentSuccessRate || 0.75) * 100),
+                    pValue: zkProof.metadata?.pValue || studyData?.outcomes?.statistics?.pValue,
+                    condition: condition,
+                    hospitalId: hospitalId,
+                    hospitalName: hospital?.name
+                  }}
+                />
+              </Box>
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowProofDialog(false)}>Close</Button>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={() => setShowProofDialog(false)} size="large">
+            Close
+          </Button>
           {!submissionResult ? (
             <Button 
               variant="contained"
               onClick={handleSubmitToBlockchain}
               disabled={!isConnected || isGenerating || !isHospitalAuthorized(hospitalId || '')}
               startIcon={<Security />}
+              size="large"
+              sx={{ minWidth: 200 }}
             >
               {isGenerating ? 'Submitting...' : 'Submit to Blockchain'}
             </Button>
           ) : (
-            <Button variant="outlined" disabled>
+            <Button variant="outlined" disabled size="large">
               Submitted Successfully
             </Button>
           )}

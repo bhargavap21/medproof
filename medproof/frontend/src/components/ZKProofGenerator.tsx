@@ -33,6 +33,7 @@ import {
   Error as ErrorIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
+import ZKProofDisplay from './ZKProofDisplay';
 // import { useWeb3 } from '../hooks/useWeb3'; // Midnight Network handles blockchain directly
 // import { useAPI } from '../hooks/useAPI'; // Using direct axios calls for Midnight integration
 import { supabase } from '../lib/supabase';
@@ -103,6 +104,7 @@ const ZKProofGenerator: React.FC = () => {
 
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedAgreementDetails, setSelectedAgreementDetails] = useState<Agreement | null>(null);
+  const [proofDetailsDialogOpen, setProofDetailsDialogOpen] = useState(false);
 
   const loadUserAgreements = useCallback(async () => {
     if (!user) return;
@@ -319,6 +321,11 @@ const ZKProofGenerator: React.FC = () => {
                   Transaction: ${result.transactionHash}
                   Your privacy-preserving research is now permanently recorded on the blockchain.`);
       handleNext();
+      
+      // Automatically open the proof details dialog to show the rich display
+      setTimeout(() => {
+        setProofDetailsDialogOpen(true);
+      }, 1000); // Small delay to let the step transition complete
 
     } catch (error: any) {
       console.error('Error submitting to Midnight blockchain:', error);
@@ -567,64 +574,27 @@ const ZKProofGenerator: React.FC = () => {
         return (
           <Grid container spacing={3}>
             <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom>
-                  🌙 Zero-Knowledge Proof Generated (Midnight Network)
-                </Typography>
                 {generatedProof ? (
-                  <>
-                    <Alert severity="success" sx={{ mb: 2 }}>
-                      <strong>Privacy-Preserving Proof Generated!</strong> Your medical research data has been cryptographically proven without exposing any patient information.
-                      <div><strong>✅ Real Midnight Network Used</strong> - Actual blockchain integration active</div>
-                      <div><strong>🔒 Transaction Hash:</strong> {generatedProof.transactionHash}</div>
-                      <div><strong>📦 Block Height:</strong> {generatedProof.blockHeight}</div>
-                    </Alert>
-                    
-                    <Card variant="outlined" sx={{ mb: 2 }}>
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>🔒 Privacy Guarantees</Typography>
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} md={6}>
-                            <Typography variant="body2">
-                              <strong>✅ Patient Data:</strong> Never exposed or transmitted
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>✅ Hospital Data:</strong> Kept completely private
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>✅ Zero-Knowledge:</strong> Cryptographically proven
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} md={6}>
-                            <Typography variant="body2">
-                              <strong>🌙 Network:</strong> {generatedProof.networkUsed}
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>🔐 Proof System:</strong> {generatedProof.metadata.proofSystem}
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>📊 Statistical Significance:</strong> {generatedProof.metadata.statisticallySignificant ? 'Verified' : 'Not verified'}
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>📋 Proof Details</Typography>
-                        <Typography variant="body2"><strong>Proof Hash:</strong> {generatedProof.proofHash}</Typography>
-                        <Typography variant="body2"><strong>Study:</strong> {proofRequest.studyTitle}</Typography>
-                        <Typography variant="body2"><strong>Query Type:</strong> {proofRequest.queryType}</Typography>
-                        <Typography variant="body2"><strong>Privacy Level:</strong> {proofRequest.privacyLevel}</Typography>
-                        <Typography variant="body2"><strong>Hospital Data Mocked:</strong> {generatedProof.metadata.hospitalDataMocked ? 'Yes (Hackathon Mode)' : 'No'}</Typography>
-                        <Typography variant="body2"><strong>Generated:</strong> {new Date(generatedProof.metadata.timestamp).toLocaleString()}</Typography>
-                      </CardContent>
-                    </Card>
-                  </>
+                  <ZKProofDisplay 
+                    proof={generatedProof} 
+                    metadata={{
+                      ...generatedProof.metadata,
+                      studyTitle: proofRequest.studyTitle,
+                      queryType: proofRequest.queryType,
+                      privacyLevel: proofRequest.privacyLevel,
+                      hospitalDataMocked: generatedProof.metadata?.hospitalDataMocked
+                    }}
+                  />
                 ) : (
-                  <Alert severity="info">
-                    Generate a zero-knowledge proof first.
-                  </Alert>
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <Security sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      Ready to Generate Zero-Knowledge Proof
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Click "Generate ZK Proof" to create a privacy-preserving cryptographic proof using Midnight Network
+                    </Typography>
+                  </Box>
                 )}
               </Grid>
             </Grid>
@@ -649,23 +619,33 @@ const ZKProofGenerator: React.FC = () => {
                   </Alert>
                 )}
               </Grid>
-              {submissionResult && (
+              {submissionResult && generatedProof && (
                 <Grid item xs={12}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>🌙 Midnight Network Transaction</Typography>
-                      <Typography variant="body2"><strong>Transaction Hash:</strong> {submissionResult.transactionHash}</Typography>
-                      <Typography variant="body2"><strong>Block Number:</strong> {submissionResult.blockNumber}</Typography>
-                      <Typography variant="body2"><strong>Network:</strong> {submissionResult.networkId}</Typography>
-                      <Typography variant="body2"><strong>Status:</strong> {submissionResult.status}</Typography>
-                      <Typography variant="body2"><strong>Gas Used:</strong> {submissionResult.gasUsed}</Typography>
-                      <Typography variant="body2"><strong>Privacy Preserved:</strong> {submissionResult.privacyPreserved ? '✅ Yes' : '❌ No'}</Typography>
-                      <Typography variant="body2"><strong>Timestamp:</strong> {new Date(submissionResult.timestamp).toLocaleString()}</Typography>
-                      {submissionResult.note && (
-                        <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}><strong>Note:</strong> {submissionResult.note}</Typography>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <Alert severity="success" sx={{ mb: 3 }} icon={<Security />}>
+                    <Typography variant="h6" gutterBottom>🎉 Successfully Submitted to Midnight Network!</Typography>
+                    <Typography variant="body2">
+                      Your zero-knowledge proof has been permanently recorded on the Midnight blockchain with complete privacy preservation.
+                    </Typography>
+                  </Alert>
+                  
+                  <ZKProofDisplay 
+                    proof={{
+                      ...generatedProof,
+                      transactionHash: submissionResult.transactionHash,
+                      blockNumber: submissionResult.blockNumber,
+                      networkId: submissionResult.networkId,
+                      gasUsed: submissionResult.gasUsed,
+                      verified: true
+                    }} 
+                    metadata={{
+                      ...generatedProof.metadata,
+                      studyTitle: proofRequest.studyTitle,
+                      queryType: proofRequest.queryType,
+                      privacyLevel: proofRequest.privacyLevel,
+                      blockchainSubmitted: true,
+                      submissionTimestamp: submissionResult.timestamp
+                    }}
+                  />
                 </Grid>
               )}
               {!submissionResult && generatedProof && (
@@ -787,14 +767,59 @@ const ZKProofGenerator: React.FC = () => {
               )}
               
               {submissionResult && (
-                <Button variant="outlined" disabled>
-                  Process Complete
+                <Button 
+                  variant="contained" 
+                  onClick={() => setProofDetailsDialogOpen(true)}
+                  startIcon={<Security />}
+                  color="success"
+                >
+                  View Proof Details
                 </Button>
               )}
             </Box>
           </CardContent>
         </Card>
       )}
+
+      {/* Proof Details Dialog */}
+      <Dialog 
+        open={proofDetailsDialogOpen} 
+        onClose={() => setProofDetailsDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: { minHeight: '90vh' }
+        }}
+      >
+        <DialogContent sx={{ p: 0 }}>
+          {generatedProof && submissionResult && (
+            <ZKProofDisplay 
+              proof={{
+                ...generatedProof,
+                transactionHash: submissionResult.transactionHash,
+                blockNumber: submissionResult.blockNumber,
+                networkId: submissionResult.networkId,
+                gasUsed: submissionResult.gasUsed,
+                verified: true
+              }} 
+              metadata={{
+                ...generatedProof.metadata,
+                studyTitle: proofRequest.studyTitle,
+                queryType: proofRequest.queryType,
+                privacyLevel: proofRequest.privacyLevel,
+                blockchainSubmitted: true,
+                submissionTimestamp: submissionResult.timestamp,
+                hospitalDataMocked: generatedProof.metadata?.hospitalDataMocked
+              }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setProofDetailsDialogOpen(false)} size="large">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Agreement Details Dialog */}
       <Dialog 
