@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - medproof-network
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001/api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - medproof-network
+
+  # PostgreSQL Database (optional for production)
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=medproof
+      - POSTGRES_USER=medproof
+      - POSTGRES_PASSWORD=medproof123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - medproof-network
+
+  # Local Ethereum Node (for blockchain development)
+  hardhat:
+    build:
+      context: ./contracts
+      dockerfile: Dockerfile
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./contracts:/app
+      - /app/node_modules
+    command: npx hardhat node
+    networks:
+      - medproof-network
+
+volumes:
+  postgres_data:
+
+networks:
+  medproof-network:
+    driver: bridge
