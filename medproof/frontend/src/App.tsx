@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import HospitalDashboard from './pages/HospitalDashboard';
 import ResearchAggregator from './pages/ResearchAggregator';
 import StudyDetails from './pages/StudyDetails';
+import ResearchResults from './pages/ResearchResults';
 import AdminDashboard from './components/AdminDashboard';
 import OrganizationDashboard from './components/OrganizationDashboard';
 import OrganizationRegistration from './components/OrganizationRegistration';
@@ -75,6 +76,7 @@ function App() {
                       <Route path="/organization/:id" element={<OrganizationManagement />} />
                       <Route path="/hospital-data-request" element={<HospitalDataRequestForm />} />
                       <Route path="/zk-proof-generator" element={<ZKProofGenerator />} />
+                      <Route path="/research-results" element={<ResearchResults />} />
                     </Routes>
                   </Container>
                 </Box>

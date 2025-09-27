@@ -31,14 +31,40 @@ class Web3Service {
   };
 
   private listeners: ((state: Web3State) => void)[] = [];
+  private connectingPromise: Promise<Web3State> | null = null;
+  private initializingPromise: Promise<Web3State> | null = null;
 
   async initialize(): Promise<Web3State> {
+    // If already initializing, return the existing promise
+    if (this.initializingPromise) {
+      console.log('Initialization already in progress, waiting...');
+      return this.initializingPromise;
+    }
+
+    // If already initialized with provider, return current state
+    if (this.state.provider) {
+      console.log('Already initialized');
+      return this.state;
+    }
+
+    // Create new initialization promise
+    this.initializingPromise = this._doInitialize();
+
+    try {
+      const result = await this.initializingPromise;
+      return result;
+    } finally {
+      this.initializingPromise = null;
+    }
+  }
+
+  private async _doInitialize(): Promise<Web3State> {
     try {
       // Wait a bit for MetaMask to load
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       const ethereum = await detectEthereumProvider({ timeout: 3000 });
-      
+
       if (!ethereum && !window.ethereum) {
         console.warn('MetaMask not detected. Web3 features will be limited.');
         return this.state;
@@ -47,20 +73,41 @@ class Web3Service {
       const ethereumProvider = ethereum || window.ethereum;
       const provider = new ethers.BrowserProvider(ethereumProvider as any);
       const network = await provider.getNetwork();
-      
+
       this.state = {
         ...this.state,
         provider,
         networkId: Number(network.chainId),
       };
 
-      if (Number(network.chainId) !== BLOCKCHAIN_CONFIG.NETWORK_ID) {
-        await this.switchNetwork();
-      }
+      // Don't auto-switch network during initialization
+      // Let user do it manually when connecting
 
-      const accounts = await provider.listAccounts();
-      if (accounts.length > 0) {
-        await this.connectWallet();
+      // Check if already connected (but don't request new connection)
+      try {
+        const accounts = await provider.listAccounts();
+        if (accounts.length > 0) {
+          // Already has permissions, reconnect without requesting
+          const signer = await provider.getSigner();
+          const account = await signer.getAddress();
+
+          const contract = new ethers.Contract(
+            BLOCKCHAIN_CONFIG.MEDICAL_RESEARCH_REGISTRY,
+            CONTRACT_ABI,
+            signer
+          );
+
+          this.state = {
+            ...this.state,
+            isConnected: true,
+            account,
+            signer,
+            contract,
+          };
+        }
+      } catch (error) {
+        // Ignore errors during auto-connect attempt
+        console.log('Auto-connect skipped:', error);
       }
 
       this.setupEventListeners();
@@ -72,6 +119,30 @@ class Web3Service {
   }
 
   async connectWallet(): Promise<Web3State> {
+    // If already connecting, return the existing promise
+    if (this.connectingPromise) {
+      console.log('Connection already in progress, waiting...');
+      return this.connectingPromise;
+    }
+
+    // If already connected, return current state
+    if (this.state.isConnected) {
+      console.log('Already connected');
+      return this.state;
+    }
+
+    // Create a new connection promise
+    this.connectingPromise = this._doConnect();
+
+    try {
+      const result = await this.connectingPromise;
+      return result;
+    } finally {
+      this.connectingPromise = null;
+    }
+  }
+
+  private async _doConnect(): Promise<Web3State> {
     try {
       // Try to detect MetaMask if not already initialized
       if (!this.state.provider) {
@@ -94,7 +165,19 @@ class Web3Service {
         await this.switchNetwork();
       }
 
-      await this.state.provider.send('eth_requestAccounts', []);
+      // Request account access with error handling for pending requests
+      try {
+        await this.state.provider.send('eth_requestAccounts', []);
+      } catch (error: any) {
+        if (error.code === -32002) {
+          console.log('MetaMask request already pending. Please check your MetaMask popup.');
+          // Return a user-friendly error instead of retrying
+          throw new Error('A MetaMask permission request is already pending. Please check your MetaMask popup and approve or reject it, then try again.');
+        } else {
+          throw error;
+        }
+      }
+
       const signer = await this.state.provider.getSigner();
       const account = await signer.getAddress();
 
@@ -114,8 +197,10 @@ class Web3Service {
 
       this.notifyListeners();
       return this.state;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Wallet connection failed:', error);
+      // Clear connecting state on error
+      this.connectingPromise = null;
       throw error;
     }
   }

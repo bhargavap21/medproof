@@ -265,10 +265,11 @@ app.post('/api/generate-proof', async (req, res) => {
             });
         }
 
-        // Enhanced response with Midnight Network information
+        // Enhanced response with Midnight Network information and research insights
         const response = {
             success: true,
             proof: proofResult.proof,
+            researchInsights: proofResult.researchInsights, // Include research insights from ZK proof generator
             metadata: {
                 ...proofResult.metadata,
                 hospitalId: hospitalId,
