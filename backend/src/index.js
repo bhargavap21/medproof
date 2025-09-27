@@ -12,10 +12,16 @@ const FHIRConnector = require('./fhir/FHIRConnector');
 // const MedicalProofGenerator = require('../../circuits/scripts/generate_proof');
 const MedicalProofGenerator = require('./proof/MedicalProofGenerator');
 const RealZKProofGenerator = require('./proof/RealZKProofGenerator');
+const StudyCommitmentGenerator = require('./proof/StudyCommitmentGenerator');
+const ProofVerifier = require('./proof/ProofVerifier');
 const ResearcherApplicationService = require('./services/ResearcherApplicationService');
 const OrganizationService = require('./services/OrganizationService');
 const HospitalDataAccessService = require('./services/HospitalDataAccessService');
+const { getStudyById } = require('./data/StudyCatalog');
 const { supabase } = require('./lib/supabase');
+
+// Import new study routes
+const studiesRouter = require('./routes/studies');
 
 // Initialize Express app
 const app = express();
@@ -40,6 +46,8 @@ const fhirConnector = new FHIRConnector({
 });
 const proofGenerator = new MedicalProofGenerator();
 const realZKProofGenerator = new RealZKProofGenerator();
+const studyCommitmentGenerator = new StudyCommitmentGenerator();
+const proofVerifier = new ProofVerifier();
 const applicationService = new ResearcherApplicationService();
 const organizationService = new OrganizationService();
 const hospitalDataAccessService = new HospitalDataAccessService();
@@ -54,6 +62,9 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+
+// Study discovery routes
+app.use('/', studiesRouter);
 
 // Auth endpoints
 app.post('/api/auth/create-profile', async (req, res) => {
@@ -241,17 +252,63 @@ app.post('/api/fhir/extract-cohort', async (req, res) => {
 // Enhanced ZK proof generation endpoint with Midnight Network integration
 app.post('/api/generate-proof', async (req, res) => {
     try {
-        const { studyData, hospitalId, organizationId, privacySettings, useMidnightNetwork, metadata } = req.body;
-        
+        const { studyData, hospitalId, organizationId, privacySettings, useMidnightNetwork, metadata, studyCommitment, selectedStudy } = req.body;
+
         console.log('🌙 Generating ZK proof with Midnight Network integration...');
         console.log('Study data:', { studyId: studyData.studyId, condition: studyData.condition });
+        console.log('Study commitment:', studyCommitment ? studyCommitment.slice(0, 16) + '...' : 'Not provided');
         console.log('Use Midnight Network:', useMidnightNetwork);
-        
+
         if (!studyData || !hospitalId) {
             return res.status(400).json({
                 success: false,
                 error: 'Study data and hospital ID are required'
             });
+        }
+
+        // Study commitment validation if provided
+        let commitmentValidation = null;
+        if (studyCommitment && selectedStudy) {
+            console.log('🔒 Validating study commitment...');
+
+            try {
+                // Get the full study object from catalog using the study ID
+                const fullStudy = getStudyById(selectedStudy.studyId);
+
+                if (!fullStudy) {
+                    return res.status(400).json({
+                        success: false,
+                        error: `Study ${selectedStudy.studyId} not found in catalog`
+                    });
+                }
+
+                // Verify the frontend-generated commitment matches backend calculation
+                const isValid = studyCommitmentGenerator.verifyCommitment(studyCommitment, fullStudy);
+
+                if (!isValid) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Study commitment validation failed - study parameters may have been tampered with'
+                    });
+                }
+
+                commitmentValidation = {
+                    valid: true,
+                    studyId: selectedStudy.studyId,
+                    commitment: studyCommitment,
+                    verifiedAt: new Date().toISOString()
+                };
+
+                console.log('✅ Study commitment validation passed');
+            } catch (error) {
+                console.error('❌ Study commitment validation error:', error);
+                return res.status(400).json({
+                    success: false,
+                    error: 'Study commitment validation failed: ' + error.message
+                });
+            }
+        } else {
+            console.log('⚠️ No study commitment provided - generating proof without study validation');
         }
 
         // Use the RealZKProofGenerator with Midnight Network integration
@@ -270,18 +327,22 @@ app.post('/api/generate-proof', async (req, res) => {
             success: true,
             proof: proofResult.proof,
             researchInsights: proofResult.researchInsights, // Include research insights from ZK proof generator
+            studyCommitmentValidation: commitmentValidation, // Include study commitment validation results
             metadata: {
                 ...proofResult.metadata,
                 hospitalId: hospitalId,
                 organizationId: organizationId,
                 privacySettings: privacySettings,
                 studyMetadata: metadata,
+                studyCommitmentProvided: !!studyCommitment,
+                studyValidated: !!commitmentValidation,
                 timestamp: new Date().toISOString(),
                 proofGenerationTime: '2-3 seconds (Midnight Network)',
                 privacyGuarantees: {
                     patientDataNeverExposed: true,
                     hospitalDataPrivate: true,
                     zeroKnowledgeProofGenerated: true,
+                    studyIntegrityVerified: !!commitmentValidation,
                     midnightNetworkUsed: proofResult.metadata?.midnightNetworkUsed || false
                 }
             }
@@ -385,6 +446,128 @@ app.get('/api/midnight-status', async (req, res) => {
         res.status(500).json({
             success: false,
             error: error.message || 'Failed to get network status'
+        });
+    }
+});
+
+// Proof verification endpoint
+app.post('/api/verify-proof', async (req, res) => {
+    try {
+        const { proof, studyId, verificationLevel = 'full' } = req.body;
+
+        console.log(`🔍 Verifying proof for study: ${studyId}`);
+        console.log(`Verification level: ${verificationLevel}`);
+
+        if (!proof || !studyId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Proof and study ID are required'
+            });
+        }
+
+        let verificationResult;
+
+        switch (verificationLevel) {
+            case 'commitment_only':
+                // Only verify study commitment
+                if (!proof.studyCommitment) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Study commitment not found in proof'
+                    });
+                }
+                verificationResult = proofVerifier.verifyStudyCommitment(proof.studyCommitment, studyId);
+                break;
+
+            case 'structure_only':
+                // Only verify proof structure
+                verificationResult = proofVerifier.validateProofStructure(proof);
+                verificationResult.studyId = studyId;
+                break;
+
+            case 'full':
+            default:
+                // Full verification including study context
+                verificationResult = await proofVerifier.verifyProofForStudy(proof, studyId);
+                break;
+        }
+
+        if (!verificationResult.valid) {
+            console.log('❌ Proof verification failed:', verificationResult.error);
+            return res.status(400).json({
+                success: false,
+                verification: verificationResult,
+                message: `Proof verification failed: ${verificationResult.error}`
+            });
+        }
+
+        console.log('✅ Proof verification successful');
+
+        res.json({
+            success: true,
+            verification: verificationResult,
+            verificationLevel: verificationLevel,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error during proof verification:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to verify proof'
+        });
+    }
+});
+
+// Batch proof verification endpoint
+app.post('/api/verify-proofs-batch', async (req, res) => {
+    try {
+        const { proofStudyPairs } = req.body;
+
+        console.log(`🔍 Batch verifying ${proofStudyPairs?.length || 0} proofs`);
+
+        if (!Array.isArray(proofStudyPairs) || proofStudyPairs.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'proofStudyPairs array is required and must not be empty'
+            });
+        }
+
+        const batchResult = await proofVerifier.batchVerifyProofs(proofStudyPairs);
+
+        console.log(`✅ Batch verification complete: ${batchResult.validProofs}/${batchResult.totalProofs} valid`);
+
+        res.json({
+            success: true,
+            batchVerification: batchResult,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error during batch proof verification:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to verify proofs in batch'
+        });
+    }
+});
+
+// Get verification system stats endpoint
+app.get('/api/verification-stats', async (req, res) => {
+    try {
+        const stats = proofVerifier.getVerificationStats();
+
+        res.json({
+            success: true,
+            verificationStats: stats,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error getting verification stats:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to get verification statistics'
         });
     }
 });
@@ -1039,6 +1222,40 @@ app.get('/api/admin/hospital-stats', (req, res) => {
         data: stats,
         timestamp: new Date().toISOString()
     });
+});
+
+// Get canonical study data for commitment generation
+app.get('/api/studies/:studyId/canonical', async (req, res) => {
+    try {
+        const { studyId } = req.params;
+
+        console.log(`📚 Fetching canonical study data for: ${studyId}`);
+
+        const study = getStudyById(studyId);
+
+        if (!study) {
+            return res.status(404).json({
+                success: false,
+                error: `Study ${studyId} not found in catalog`,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        console.log(`✅ Found canonical study: ${study.studyId}`);
+
+        res.json({
+            success: true,
+            study: study,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Error fetching canonical study:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
 });
 
 // 404 handler

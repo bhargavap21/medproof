@@ -37,6 +37,7 @@ import { useAuth } from '../hooks/useAuth';
 // import { useAPI } from '../hooks/useAPI'; // Using direct axios calls for Midnight integration
 import { supabase } from '../lib/supabase';
 import axios from 'axios'; // Added axios import
+import StudySelector from './StudySelector';
 
 interface Agreement {
   id: string;
@@ -59,10 +60,66 @@ interface Agreement {
 
 interface ProofRequest {
   agreementId: string;
+  studyId?: string;
   studyTitle: string;
   queryType: string;
   parameters: Record<string, any>;
   privacyLevel: 'high' | 'medium' | 'low';
+}
+
+interface Study {
+  studyId: string;
+  hospitalId: string;
+  hospitalName: string;
+  metadata: {
+    title: string;
+    condition: {
+      code: string;
+      display: string;
+      system?: string;
+    };
+    treatment: {
+      code?: string;
+      display: string;
+      dosing?: string;
+    };
+    comparator?: {
+      code?: string;
+      display: string;
+      dosing?: string;
+    };
+  };
+  protocol: {
+    inclusionCriteria: {
+      ageRange: { min: number; max: number };
+      gender: string;
+      hba1cRange?: { min: number; max: number };
+      bmiRange?: { min: number; max: number };
+      ejectionFraction?: { max: number };
+      [key: string]: any;
+    };
+    designType: string;
+    primaryEndpoint?: {
+      measure: string;
+      timepoint: string;
+    };
+    duration?: string;
+    blinding?: string;
+    studyDesign?: {
+      type?: string;
+      duration?: string;
+      blinding?: string;
+      randomization?: string;
+    };
+  };
+  enrollment?: {
+    actualSize: number;
+    targetSize?: number;
+  };
+  regulatory?: {
+    irbNumber?: string;
+    clinicalTrialsId?: string;
+  };
 }
 
 const steps = [
@@ -87,6 +144,7 @@ const ZKProofGenerator: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [generatedProof, setGeneratedProof] = useState<any>(null);
   const [submissionResult, setSubmissionResult] = useState<any>(null);
+  const [selectedStudy, setSelectedStudy] = useState<Study | null>(null);
   
   const [proofRequest, setProofRequest] = useState<ProofRequest>({
     agreementId: '',
@@ -180,8 +238,140 @@ const ZKProofGenerator: React.FC = () => {
     setError(null);
   };
 
+  const handleStudySelection = (study: Study | null) => {
+    setSelectedStudy(study);
+
+    if (study) {
+      // Auto-populate form with study parameters
+      setProofRequest(prev => ({
+        ...prev,
+        studyId: study.studyId,
+        studyTitle: study.metadata.title,
+        queryType: study.protocol.designType === 'randomized-controlled-trial' ? 'treatment_outcomes' :
+                   study.protocol.designType === 'single-arm-study' ? 'cohort_analysis' : 'treatment_outcomes',
+        parameters: {
+          condition: study.metadata.condition.display,
+          ageRange: study.protocol.inclusionCriteria.ageRange,
+          gender: study.protocol.inclusionCriteria.gender,
+          treatment: study.metadata.treatment.display,
+          comparator: study.metadata.comparator?.display || 'standard care'
+        }
+      }));
+
+      console.log('📋 Selected study:', study.metadata.title);
+      console.log('🔧 Auto-populated parameters from study protocol');
+    } else {
+      // Clear form when no study selected
+      setProofRequest(prev => ({
+        ...prev,
+        studyId: undefined,
+        studyTitle: '',
+        parameters: {
+          condition: '',
+          ageRange: { min: 18, max: 100 },
+          gender: 'all',
+          treatment: '',
+          comparator: ''
+        }
+      }));
+    }
+  };
+
+  const generateStudyCommitment = (study: Study) => {
+    console.log('🔒 Frontend: Generating study commitment for:', study.studyId);
+    console.log('🔍 Frontend: Original study object:', study);
+
+    // Create canonical study representation (matching backend logic)
+    const canonicalStudy = {
+      studyId: study.studyId,
+      hospitalId: study.hospitalId,
+      condition: {
+        code: study.metadata.condition.code,
+        system: study.metadata.condition.system || 'ICD-10',
+        display: study.metadata.condition.display
+      },
+      treatment: {
+        code: study.metadata.treatment.code || study.metadata.treatment.display,
+        display: study.metadata.treatment.display,
+        dosing: study.metadata.treatment.dosing || ''
+      },
+      comparator: study.metadata.comparator ? {
+        code: study.metadata.comparator.code || study.metadata.comparator.display,
+        display: study.metadata.comparator.display,
+        dosing: study.metadata.comparator.dosing || ''
+      } : null,
+      inclusionCriteria: {
+        ageMin: study.protocol.inclusionCriteria.ageRange.min,
+        ageMax: study.protocol.inclusionCriteria.ageRange.max,
+        gender: study.protocol.inclusionCriteria.gender,
+        // Add other criteria as ordered keys (matching backend)
+        ...(study.protocol.inclusionCriteria.hba1cRange && {
+          hba1cMin: study.protocol.inclusionCriteria.hba1cRange.min,
+          hba1cMax: study.protocol.inclusionCriteria.hba1cRange.max
+        }),
+        ...(study.protocol.inclusionCriteria.bmiRange && {
+          bmiMin: study.protocol.inclusionCriteria.bmiRange.min,
+          bmiMax: study.protocol.inclusionCriteria.bmiRange.max
+        }),
+        ...(study.protocol.inclusionCriteria.ejectionFraction && {
+          ejectionFractionMax: study.protocol.inclusionCriteria.ejectionFraction.max
+        })
+      },
+      primaryEndpoint: {
+        measure: study.protocol.primaryEndpoint?.measure || '',
+        timepoint: study.protocol.primaryEndpoint?.timepoint || ''
+      },
+      studyDesign: {
+        type: study.protocol.studyDesign?.type || study.protocol.designType,
+        duration: study.protocol.studyDesign?.duration || study.protocol.duration,
+        blinding: study.protocol.studyDesign?.blinding || study.protocol.blinding || 'open-label',
+        randomization: study.protocol.studyDesign?.randomization || 'none'
+      },
+      enrollment: {
+        targetSize: study.enrollment?.targetSize || study.enrollment?.actualSize || 0,
+        actualSize: study.enrollment?.actualSize || 0
+      },
+      regulatory: {
+        irbNumber: study.regulatory?.irbNumber || '',
+        clinicalTrialsId: study.regulatory?.clinicalTrialsId || ''
+      }
+    };
+
+    console.log('📋 Frontend: Canonical study before sorting:', canonicalStudy);
+
+    // Sort keys recursively for deterministic hash (matching backend logic)
+    const sortObjectKeys = (obj: any): any => {
+      if (obj === null || typeof obj !== 'object' || obj instanceof Array) {
+        return obj;
+      }
+      const sortedObj: any = {};
+      const keys = Object.keys(obj).sort();
+      for (const key of keys) {
+        sortedObj[key] = sortObjectKeys(obj[key]);
+      }
+      return sortedObj;
+    };
+
+    const sortedCanonicalStudy = sortObjectKeys(canonicalStudy);
+    const studyString = JSON.stringify(sortedCanonicalStudy);
+
+    console.log('🔄 Frontend: Sorted canonical study:', sortedCanonicalStudy);
+    console.log('📝 Frontend: Study string for hashing:', studyString);
+
+    // Simple hash using built-in crypto (browser compatible)
+    const encoder = new TextEncoder();
+    const data = encoder.encode(studyString);
+
+    return crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      console.log('✅ Frontend: Generated commitment hash:', hashHex.slice(0, 16) + '...');
+      return hashHex;
+    });
+  };
+
   const handleGenerateProof = async () => {
-    if (!selectedAgreement || !proofRequest.studyTitle) return;
+    if (!selectedAgreement || !proofRequest.studyTitle || !selectedStudy) return;
 
     try {
       setLoading(true);
@@ -193,21 +383,41 @@ const ZKProofGenerator: React.FC = () => {
 
       console.log('🌙 Generating ZK proof using Midnight Network...');
 
+      // Fetch canonical study data from backend to ensure commitment hash matches
+      console.log('📚 Fetching canonical study data for commitment generation...');
+      const canonicalResponse = await axios.get(`http://localhost:3001/api/studies/${selectedStudy.studyId}/canonical`);
+      const canonicalStudy = canonicalResponse.data.study;
+      console.log('✅ Got canonical study data:', canonicalStudy.studyId);
+
+      // Generate study commitment hash using canonical data
+      const studyCommitment = await generateStudyCommitment(canonicalStudy);
+      console.log('🔒 Generated study commitment:', studyCommitment.slice(0, 16) + '...');
+
       // Mock hospital data (for hackathon - this would come from actual hospital systems)
       const mockHospitalData = generateMockHospitalData(proofRequest.queryType);
       
-      console.log('📊 Using mock hospital data for demo:', {
+      console.log('📊 Study parameters being sent to backend:', {
+        studyTitle: proofRequest.studyTitle,
         queryType: proofRequest.queryType,
-        patientCount: mockHospitalData.patientCount,
-        note: 'In production, this would be real hospital data from FHIR systems'
+        condition: proofRequest.parameters.condition,
+        ageRange: proofRequest.parameters.ageRange,
+        gender: proofRequest.parameters.gender,
+        timeframe: proofRequest.parameters.timeframe,
+        privacyLevel: proofRequest.privacyLevel,
+        mockHospitalData: mockHospitalData
       });
 
       // Call backend API to generate REAL Midnight Network ZK proof
       const response = await axios.post('http://localhost:3001/api/generate-proof', {
         studyData: {
-          studyId: `${proofRequest.studyTitle.replace(/\s+/g, '_')}_${Date.now()}`,
-          condition: proofRequest.queryType.split('_')[0] || 'treatment',
+          studyId: selectedStudy.studyId, // Use actual study ID instead of constructed one
+          condition: proofRequest.parameters.condition || mockHospitalData.condition,
+          queryType: proofRequest.queryType,
           treatment: proofRequest.studyTitle.toLowerCase().includes('drug') ? 'pharmaceutical' : 'therapeutic',
+          studyTitle: proofRequest.studyTitle,
+          ageRange: proofRequest.parameters.ageRange,
+          gender: proofRequest.parameters.gender,
+          timeframe: proofRequest.parameters.timeframe,
           ...mockHospitalData
         },
         hospitalId: agreement.hospital_id,
@@ -218,6 +428,8 @@ const ZKProofGenerator: React.FC = () => {
           allowResearcherAccess: proofRequest.privacyLevel !== 'high'
         },
         useMidnightNetwork: true, // Enable real Midnight Network integration
+        studyCommitment: studyCommitment, // Include study commitment hash
+        selectedStudy: selectedStudy, // Include full study object for backend validation
         metadata: {
           studyTitle: proofRequest.studyTitle,
           queryType: proofRequest.queryType,
@@ -486,96 +698,57 @@ const ZKProofGenerator: React.FC = () => {
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>
-                Configure Proof Parameters
+                Select Study for ZK Proof Generation
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Choose from real completed clinical studies. Study parameters will be automatically
+                populated and cannot be modified to ensure proof integrity.
               </Typography>
             </Grid>
-            
+
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Study Title"
-                value={proofRequest.studyTitle}
-                onChange={(e) => setProofRequest(prev => ({ ...prev, studyTitle: e.target.value }))}
-                required
+              <StudySelector
+                onStudySelect={handleStudySelection}
+                selectedStudyId={selectedStudy?.studyId}
               />
             </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Query Type</InputLabel>
-                <Select
-                  value={proofRequest.queryType}
-                  onChange={(e) => setProofRequest(prev => ({ ...prev, queryType: e.target.value }))}
-                  label="Query Type"
-                >
-                  <MenuItem value="cohort_analysis">Cohort Analysis</MenuItem>
-                  <MenuItem value="treatment_outcomes">Treatment Outcomes</MenuItem>
-                  <MenuItem value="lab_analysis">Lab Analysis</MenuItem>
-                  <MenuItem value="imaging_study">Imaging Study</MenuItem>
-                  <MenuItem value="medication_adherence">Medication Adherence</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Privacy Level</InputLabel>
-                <Select
-                  value={proofRequest.privacyLevel}
-                  onChange={(e) => setProofRequest(prev => ({ ...prev, privacyLevel: e.target.value as any }))}
-                  label="Privacy Level"
-                >
-                  <MenuItem value="high">High (Maximum Privacy)</MenuItem>
-                  <MenuItem value="medium">Medium (Balanced)</MenuItem>
-                  <MenuItem value="low">Low (More Detail)</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Medical Condition"
-                value={proofRequest.parameters.condition}
-                onChange={(e) => setProofRequest(prev => ({ 
-                  ...prev, 
-                  parameters: { ...prev.parameters, condition: e.target.value }
-                }))}
-                placeholder="e.g., diabetes, hypertension, heart disease"
-              />
-            </Grid>
-            
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Min Age"
-                value={proofRequest.parameters.ageRange.min}
-                onChange={(e) => setProofRequest(prev => ({ 
-                  ...prev, 
-                  parameters: { 
-                    ...prev.parameters, 
-                    ageRange: { ...prev.parameters.ageRange, min: parseInt(e.target.value) }
-                  }
-                }))}
-              />
-            </Grid>
-            
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Max Age"
-                value={proofRequest.parameters.ageRange.max}
-                onChange={(e) => setProofRequest(prev => ({ 
-                  ...prev, 
-                  parameters: { 
-                    ...prev.parameters, 
-                    ageRange: { ...prev.parameters.ageRange, max: parseInt(e.target.value) }
-                  }
-                }))}
-              />
-            </Grid>
+
+            {selectedStudy && (
+              <>
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Privacy Level</InputLabel>
+                    <Select
+                      value={proofRequest.privacyLevel}
+                      onChange={(e) => setProofRequest(prev => ({ ...prev, privacyLevel: e.target.value as any }))}
+                      label="Privacy Level"
+                    >
+                      <MenuItem value="high">High (Maximum Privacy)</MenuItem>
+                      <MenuItem value="medium">Medium (Balanced)</MenuItem>
+                      <MenuItem value="low">Low (More Detail)</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Alert severity="info">
+                    <Typography variant="subtitle2">Study Parameters (Read-Only)</Typography>
+                    <Typography variant="body2">
+                      <strong>Study:</strong> {proofRequest.studyTitle}<br/>
+                      <strong>Condition:</strong> {proofRequest.parameters.condition}<br/>
+                      <strong>Age Range:</strong> {proofRequest.parameters.ageRange.min}-{proofRequest.parameters.ageRange.max} years<br/>
+                      <strong>Query Type:</strong> {proofRequest.queryType}<br/>
+                      <strong>Treatment:</strong> {proofRequest.parameters.treatment}
+                      {proofRequest.parameters.comparator && (
+                        <>
+                          <br/><strong>Comparator:</strong> {proofRequest.parameters.comparator}
+                        </>
+                      )}
+                    </Typography>
+                  </Alert>
+                </Grid>
+              </>
+            )}
           </Grid>
         );
 
@@ -609,6 +782,9 @@ const ZKProofGenerator: React.FC = () => {
                             <Typography variant="body2">
                               <strong>✅ Zero-Knowledge:</strong> Cryptographically proven
                             </Typography>
+                            <Typography variant="body2">
+                              <strong>🔒 Study Integrity:</strong> {generatedProof.metadata.studyIntegrityVerified ? 'Verified' : 'Not verified'}
+                            </Typography>
                           </Grid>
                           <Grid item xs={12} md={6}>
                             <Typography variant="body2">
@@ -622,6 +798,81 @@ const ZKProofGenerator: React.FC = () => {
                             </Typography>
                           </Grid>
                         </Grid>
+                      </CardContent>
+                    </Card>
+
+                    {/* Study Commitment Verification Section */}
+                    <Card variant="outlined" sx={{ mb: 2 }}>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                          🔒 Study Integrity Verification
+                          <Chip
+                            label={generatedProof.metadata.studyValidated ? "Validated" : "Not Validated"}
+                            color={generatedProof.metadata.studyValidated ? "success" : "warning"}
+                            size="small"
+                            sx={{ ml: 2 }}
+                          />
+                        </Typography>
+
+                        {generatedProof.metadata.studyValidated ? (
+                          <Alert severity="success" sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                              ✅ Study Parameters Cryptographically Verified
+                            </Typography>
+                            <Typography variant="body2">
+                              The ZK proof has been verified to correspond to the selected study parameters.
+                              Study commitment validation ensures that the proof cannot be manipulated or applied to different studies.
+                            </Typography>
+                          </Alert>
+                        ) : (
+                          <Alert severity="warning" sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                              ⚠️ Study Validation Not Performed
+                            </Typography>
+                            <Typography variant="body2">
+                              This proof was generated without study commitment validation.
+                              While the ZK proof is cryptographically valid, study parameter integrity is not guaranteed.
+                            </Typography>
+                          </Alert>
+                        )}
+
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                              <strong>🔐 Study Commitment:</strong> {generatedProof.metadata.studyCommitmentProvided ? 'Provided' : 'Not Provided'}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                              <strong>✅ Parameter Integrity:</strong> {generatedProof.metadata.studyValidated ? 'Verified' : 'Unverified'}
+                            </Typography>
+                            <Typography variant="body2">
+                              <strong>🛡️ Tamper Protection:</strong> {generatedProof.metadata.studyValidated ? 'Active' : 'Inactive'}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                              <strong>📋 Study ID:</strong> {selectedStudy?.studyId || 'Unknown'}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                              <strong>🏥 Hospital:</strong> {selectedStudy?.hospitalName || 'Unknown'}
+                            </Typography>
+                            <Typography variant="body2">
+                              <strong>🔬 Study Type:</strong> {selectedStudy?.protocol.designType || 'Unknown'}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+
+                        {generatedProof.metadata.studyValidated && (
+                          <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(25, 118, 210, 0.04)', borderRadius: 1, border: '1px solid rgba(25, 118, 210, 0.12)' }}>
+                            <Typography variant="subtitle2" color="primary" gutterBottom>
+                              🔒 Commitment Validation Details
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Study parameters including condition, treatment, patient demographics, and study design
+                              have been cryptographically committed and verified. This ensures the proof cannot be
+                              fraudulently applied to different studies or manipulated after generation.
+                            </Typography>
+                          </Box>
+                        )}
                       </CardContent>
                     </Card>
 
