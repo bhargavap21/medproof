@@ -80,9 +80,9 @@ const Dashboard: React.FC = () => {
     navigate(`/organization/${orgId}`);
   };
 
-  const handleRequestHospitalData = () => {
-    navigate('/hospital-data-request');
-  };
+  // const handleRequestHospitalData = () => {
+  //   navigate('/hospital-data-request');
+  // };
 
   const handleGenerateZKProof = () => {
     navigate('/zk-proof-generator');
@@ -141,6 +141,38 @@ const Dashboard: React.FC = () => {
         <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
           Privacy-preserving medical research collaboration platform
         </Typography>
+        
+        {/* Midnight Network Showcase */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2, 
+          p: 3, 
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', 
+          color: 'white', 
+          borderRadius: 3,
+          border: '1px solid rgba(255,255,255,0.1)',
+          mb: 2,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+        }}>
+          <Box sx={{ fontSize: 40 }}>🌙</Box>
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+              Built on Midnight Network
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              Enabling secure, privacy-preserving medical research through zero-knowledge proofs and programmable privacy
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: 'center', minWidth: 100 }}>
+            <Typography variant="caption" sx={{ opacity: 0.7 }}>
+              ZK-SNARKS
+            </Typography>
+            <Typography variant="h6" sx={{ color: '#4caf50', fontWeight: 600 }}>
+              VERIFIED
+            </Typography>
+          </Box>
+        </Box>
         
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -246,20 +278,20 @@ const Dashboard: React.FC = () => {
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                 <LocalHospital sx={{ mr: 1 }} />
-                Hospital Data Access
+                Hospital Data Network
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Request access to hospital data for zero-knowledge proof generation and research purposes.
+                Connect with {hospitals.length} verified hospitals in our privacy-preserving research network powered by Midnight.
               </Typography>
             </CardContent>
             <CardActions>
               <Button 
                 variant="contained" 
-                onClick={handleRequestHospitalData}
-                startIcon={<Add />}
+                onClick={() => navigate('/research')}
+                startIcon={<Assessment />}
                 color="secondary"
               >
-                Request Access
+                Explore Network
               </Button>
             </CardActions>
           </Card>

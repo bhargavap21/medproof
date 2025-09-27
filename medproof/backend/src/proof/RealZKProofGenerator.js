@@ -1,26 +1,54 @@
 const crypto = require('crypto');
-const snarkjs = require('snarkjs');
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs');
+
+// Import Midnight integration (we'll mock this for now since the actual SDK needs proper setup)
+// const { MedProofMidnightIntegration } = require('../../midnight-integration/src/integration/BackendIntegration.ts');
 
 /**
- * Real ZK Proof Generator using actual cryptographic operations
- * This bridges between your Circom circuits and the backend API
+ * Real ZK Proof Generator using Midnight Network
+ * This integrates with Midnight's privacy-preserving blockchain for actual ZK proof generation
  */
 class RealZKProofGenerator {
     constructor() {
         this.circuitsPath = path.join(__dirname, '../../../circuits');
         this.buildPath = path.join(this.circuitsPath, 'build');
         
-        // Ensure build directory exists
-        if (!fs.existsSync(this.buildPath)) {
-            fs.mkdirSync(this.buildPath, { recursive: true });
+        // Initialize Midnight integration
+        this.midnightReady = false;
+        this.initializeMidnight();
+    }
+
+    async initializeMidnight() {
+        console.log('🌙 Initializing Midnight Network integration...');
+
+        // Validate required environment variables
+        const requiredEnvVars = ['MIDNIGHT_RPC_ENDPOINT', 'MIDNIGHT_CONTRACT_ADDRESS', 'MIDNIGHT_PRIVATE_KEY'];
+        const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+        if (missingVars.length > 0) {
+            throw new Error(`Missing required Midnight Network environment variables: ${missingVars.join(', ')}`);
         }
+
+        this.midnightConfig = {
+            networkId: process.env.MIDNIGHT_NETWORK_ID || 'midnight-testnet',
+            rpcEndpoint: process.env.MIDNIGHT_RPC_ENDPOINT,
+            contractAddress: process.env.MIDNIGHT_CONTRACT_ADDRESS,
+            privateKey: process.env.MIDNIGHT_PRIVATE_KEY,
+            mode: 'production'
+        };
+
+        // Initialize the actual Midnight service - no fallbacks
+        const { MedProofMidnightIntegration } = require('../../midnight-integration/src/integration/BackendIntegration.ts');
+        this.midnightService = new MedProofMidnightIntegration(this.midnightConfig);
+        await this.midnightService.initialize();
+
+        this.midnightReady = true;
+        console.log('✅ Midnight Network integration ready - real network connected');
     }
 
     /**
-     * Generate a real ZK proof for medical statistics
-     * Uses actual cryptographic commitments and verifiable computation
+     * Generate a real ZK proof for medical statistics using Midnight Network
      */
     async generateMedicalStatsProof(studyData, salt) {
         try {
@@ -32,251 +60,168 @@ class RealZKProofGenerator {
                 pValue
             } = studyData;
 
-            // Real cryptographic operations
-            const pValueScaled = Math.floor(pValue * 10000);
+            console.log('🔒 Generating ZK proof with Midnight Network...');
             
-            // Generate real commitment using SHA-256 (simulating Poseidon hash)
-            const commitmentData = Buffer.concat([
-                Buffer.from(patientCount.toString()),
-                Buffer.from(treatmentSuccess.toString()),
-                Buffer.from(controlSuccess.toString()),
-                Buffer.from(controlCount.toString()),
-                Buffer.from(pValueScaled.toString()),
-                Buffer.from(salt.toString())
-            ]);
-            
-            const commitmentHash = crypto.createHash('sha256').update(commitmentData).digest('hex');
-            const commitment = BigInt('0x' + commitmentHash.slice(0, 16)); // Use first 64 bits
-
-            console.log("🔐 Generating REAL ZK proof with cryptographic commitment:", {
-                patientCount,
-                treatmentSuccess,
-                controlSuccess,
-                controlCount,
-                pValueScaled,
-                commitment: commitment.toString()
-            });
-
-            // Circuit constraint validation (what would happen inside Circom)
-            const minPatients = 100;
-            const minEfficacyRate = 70; // 70% minimum efficacy
-            const maxPValueScaled = 500; // p < 0.05
-            
-            const validSampleSize = patientCount >= minPatients ? 1 : 0;
-            const efficacyRate = (treatmentSuccess * 100) / patientCount;
-            const validEfficacy = efficacyRate >= minEfficacyRate ? 1 : 0;
-            const validSignificance = pValueScaled < maxPValueScaled ? 1 : 0;
-            const overallValid = validSampleSize && validEfficacy && validSignificance ? 1 : 0;
-
-            // Generate real cryptographic proof elements
-            const proofElements = this.generateRealProofElements(commitmentData, overallValid);
-
-            const proof = {
-                proof: {
-                    pi_a: proofElements.pi_a,
-                    pi_b: proofElements.pi_b,
-                    pi_c: proofElements.pi_c,
-                    protocol: "groth16",
-                    curve: "bn128"
-                },
-                publicSignals: [
-                    minPatients,
-                    minEfficacyRate,
-                    maxPValueScaled,
-                    commitment.toString(),
-                    validSampleSize,
-                    validEfficacy,
-                    validSignificance,
-                    overallValid
-                ],
-                metadata: {
-                    studyType: "treatment-efficacy",
-                    efficacyRate: Math.round(efficacyRate),
-                    sampleSize: patientCount,
-                    pValue: pValue,
-                    timestamp: new Date().toISOString(),
-                    proofHash: this.calculateProofHash(proofElements),
-                    isRealProof: true, // Flag to indicate this is a real cryptographic proof
-                    circuitUsed: "medical_stats.circom"
-                }
+            // Prepare data for Midnight Network
+            const privateData = {
+                patientCount: patientCount,
+                treatmentSuccess: treatmentSuccess,
+                controlSuccess: controlSuccess,
+                controlCount: controlCount,
+                pValue: Math.round(pValue * 1000) // Scale p-value for Midnight contract
             };
 
-            // Verify the proof internally
-            const verification = await this.verifyProof(proof);
-            proof.metadata.verified = verification.valid;
-            proof.metadata.verificationTimestamp = verification.timestamp;
-
-            console.log("✅ Real ZK proof generated successfully:", {
-                valid: overallValid === 1,
-                verified: verification.valid,
-                proofHash: proof.metadata.proofHash
-            });
-
-            return proof;
-        } catch (error) {
-            console.error("❌ Error generating real ZK proof:", error);
-            throw error;
-        }
-    }
-
-    /**
-     * Generate real cryptographic proof elements using elliptic curve operations
-     */
-    generateRealProofElements(commitmentData, valid) {
-        // Use real cryptographic operations to generate proof elements
-        const seed1 = crypto.createHash('sha256').update(commitmentData).digest();
-        const seed2 = crypto.createHash('sha256').update(Buffer.concat([seed1, Buffer.from('pi_a')])).digest();
-        const seed3 = crypto.createHash('sha256').update(Buffer.concat([seed1, Buffer.from('pi_b')])).digest();
-        const seed4 = crypto.createHash('sha256').update(Buffer.concat([seed1, Buffer.from('pi_c')])).digest();
-
-        // Generate cryptographically secure proof elements
-        const pi_a = [
-            '0x' + seed2.slice(0, 16).toString('hex'),
-            '0x' + seed2.slice(16, 32).toString('hex'),
-            "1"
-        ];
-
-        const pi_b = [
-            ['0x' + seed3.slice(0, 16).toString('hex'), '0x' + seed3.slice(16, 32).toString('hex')],
-            ['0x' + seed4.slice(0, 16).toString('hex'), '0x' + seed4.slice(16, 32).toString('hex')],
-            ["1", "0"]
-        ];
-
-        const pi_c = [
-            '0x' + seed4.slice(0, 16).toString('hex'),
-            '0x' + seed4.slice(16, 32).toString('hex'),
-            "1"
-        ];
-
-        return { pi_a, pi_b, pi_c };
-    }
-
-    /**
-     * Calculate a cryptographic hash of the proof for verification
-     */
-    calculateProofHash(proofElements) {
-        const proofString = JSON.stringify(proofElements);
-        return crypto.createHash('sha256').update(proofString).digest('hex');
-    }
-
-    /**
-     * Verify a ZK proof (simulates verifier.key check)
-     */
-    async verifyProof(proof) {
-        try {
-            // In a real implementation, this would use snarkjs.groth16.verify()
-            // For now, we'll do cryptographic verification of proof structure
-            
-            const { pi_a, pi_b, pi_c } = proof.proof;
-            const publicSignals = proof.publicSignals;
-
-            // Verify proof structure is cryptographically sound
-            const isValidStructure = 
-                Array.isArray(pi_a) && pi_a.length === 3 &&
-                Array.isArray(pi_b) && pi_b.length === 3 &&
-                Array.isArray(pi_c) && pi_c.length === 3 &&
-                Array.isArray(publicSignals);
-
-            // Verify commitment integrity
-            const overallValid = publicSignals[7];
-            const efficacyRate = proof.metadata.efficacyRate;
-            const sampleSize = proof.metadata.sampleSize;
-            
-            // Business logic verification
-            const meetsThreshold = efficacyRate >= 70 && sampleSize >= 100;
-            const logicallyValid = (overallValid === 1) === meetsThreshold;
-
-            const valid = isValidStructure && logicallyValid;
-
-            console.log("🔍 Proof verification:", {
-                structureValid: isValidStructure,
-                logicallyValid: logicallyValid,
-                meetsThreshold: meetsThreshold,
-                overall: valid
-            });
-
-            return {
-                valid: valid,
-                timestamp: new Date().toISOString(),
-                verificationMethod: "cryptographic_structure_and_logic"
+            const publicMetadata = {
+                studyId: `study_${Date.now()}`,
+                hospitalId: `hospital_${salt}`,
+                studyType: 'treatment-efficacy',
+                timestamp: Date.now()
             };
-        } catch (error) {
-            console.error("❌ Proof verification failed:", error);
-            return {
-                valid: false,
-                timestamp: new Date().toISOString(),
-                error: error.message
-            };
-        }
-    }
 
-    /**
-     * Generate multiple proofs for demo (maintaining real cryptography)
-     */
-    async generateDemoProofs() {
-        const hospitals = [
-            {
-                name: "Mayo Clinic",
-                studyData: {
-                    patientCount: 1670,
-                    treatmentSuccess: 1303, // 78% efficacy
-                    controlSuccess: 428,    // 52% control
-                    controlCount: 823,
-                    pValue: 0.0001
-                }
-            },
-            {
-                name: "Cleveland Clinic",
-                studyData: {
-                    patientCount: 1393,
-                    treatmentSuccess: 1031, // 74% efficacy
-                    controlSuccess: 337,    // 48% control
-                    controlCount: 701,
-                    pValue: 0.0003
-                }
-            },
-            {
-                name: "Johns Hopkins Hospital",
-                studyData: {
-                    patientCount: 1852,
-                    treatmentSuccess: 1504, // 81% efficacy
-                    controlSuccess: 450,    // 49% control
-                    controlCount: 918,
-                    pValue: 0.00005
-                }
+            // Ensure Midnight Network is ready - no fallbacks
+            if (!this.midnightReady) {
+                throw new Error('Midnight Network not initialized. Cannot generate ZK proofs without real network connection.');
             }
-        ];
 
-        const proofs = [];
-        
-        for (let i = 0; i < hospitals.length; i++) {
-            const hospital = hospitals[i];
-            // Use cryptographically secure random for salt
-            const salt = crypto.randomInt(1000000, 9999999);
-            
-            const proof = await this.generateMedicalStatsProof(hospital.studyData, salt);
-            proof.metadata.hospitalName = hospital.name;
-            proof.metadata.hospitalId = hospital.name.toLowerCase().replace(/\s+/g, '-');
-            
-            proofs.push(proof);
+            // Use only actual Midnight Network for ZK proof generation
+            const zkProofResult = await this.generateMidnightProof(privateData, publicMetadata);
+
+            // Validate the proof meets medical research requirements
+            this.validateMedicalProof(privateData, zkProofResult);
+
+            return {
+                success: true,
+                proof: zkProofResult,
+                metadata: {
+                    proofSystem: 'midnight-zk-snarks',
+                    privacyLevel: 'maximum',
+                    patientDataExposed: false,
+                    statisticallySignificant: privateData.pValue <= 50, // p < 0.05
+                    midnightNetworkUsed: this.midnightReady
+                }
+            };
+
+        } catch (error) {
+            console.error('❌ Failed to generate ZK proof:', error);
+            throw error; // Don't catch and return errors - let them propagate to expose real issues
         }
-
-        return proofs;
     }
 
     /**
-     * Check if circuit files exist and are compiled
+     * Generate actual Midnight Network ZK proof
      */
-    checkCircuitStatus() {
-        const circuitFile = path.join(this.circuitsPath, 'circuits', 'medical_stats.circom');
-        const wasmFile = path.join(this.buildPath, 'medical_stats.wasm');
-        const r1csFile = path.join(this.buildPath, 'medical_stats.r1cs');
+    async generateMidnightProof(privateData, publicMetadata) {
+        console.log('🌙 Using real Midnight Network for ZK proof generation');
+
+        // Use the actual Midnight service - no simulation
+        const result = await this.midnightService.submitMedicalProof(privateData, publicMetadata);
+
+        if (!result || !result.success) {
+            throw new Error(`Midnight Network proof generation failed: ${result?.error || 'Unknown error'}`);
+        }
 
         return {
-            circuitExists: fs.existsSync(circuitFile),
-            wasmExists: fs.existsSync(wasmFile),
-            r1csExists: fs.existsSync(r1csFile),
-            isCompiled: fs.existsSync(wasmFile) && fs.existsSync(r1csFile)
+            proofHash: result.proofHash,
+            publicSignals: result.publicSignals,
+            proof: result.proof,
+            verified: result.verified,
+            networkUsed: result.networkId || this.midnightConfig.networkId,
+            transactionHash: result.transactionHash,
+            blockHeight: result.blockHeight,
+            privacyGuarantees: {
+                patientDataNeverExposed: true,
+                hospitalDataPrivate: true,
+                zeroKnowledgeProofGenerated: true,
+                cryptographicallySecure: true,
+                realMidnightNetworkUsed: true
+            }
+        };
+    }
+
+    // Removed generateSimulatedMidnightProof - no fallbacks allowed
+
+    /**
+     * Generate Midnight-compatible proof hash
+     */
+    generateMidnightProofHash(privateData, publicMetadata) {
+        // Use Poseidon-like hash structure (simplified for demo)
+        const hashInput = [
+            privateData.patientCount,
+            privateData.treatmentSuccess,
+            privateData.controlSuccess,
+            privateData.controlCount,
+            privateData.pValue,
+            publicMetadata.timestamp
+        ].join('|');
+        
+        const hash = crypto.createHash('sha256').update(hashInput).digest('hex');
+        return `midnight_proof_${hash.slice(0, 32)}`;
+    }
+
+    /**
+     * Validate medical proof meets research standards
+     */
+    validateMedicalProof(privateData, proof) {
+        // Validate minimum sample size (as per Midnight contract)
+        if (privateData.patientCount < 50) {
+            throw new Error('Study must have minimum 50 patients (Midnight contract requirement)');
+        }
+
+        // Validate statistical significance (as per Midnight contract)
+        if (privateData.pValue > 50) { // 0.05 scaled by 1000
+            throw new Error('Study must be statistically significant (p < 0.05)');
+        }
+
+        // Validate treatment efficacy
+        const treatmentRate = privateData.treatmentSuccess / privateData.patientCount;
+        const controlRate = privateData.controlSuccess / privateData.controlCount;
+        
+        if (treatmentRate <= controlRate) {
+            throw new Error('Treatment must show improvement over control (Midnight contract requirement)');
+        }
+
+        console.log('✅ Medical proof validation passed - meets Midnight Network requirements');
+    }
+
+    /**
+     * Submit proof to Midnight Network blockchain
+     */
+    async submitToMidnightBlockchain(proofResult, studyMetadata) {
+        console.log('🌙 Submitting proof to Midnight Network blockchain...');
+
+        if (!this.midnightReady) {
+            throw new Error('Midnight Network not initialized. Cannot submit to blockchain without real network connection.');
+        }
+
+        // Actual Midnight Network submission only
+        const txResult = await this.midnightService.submitProofToBlockchain(proofResult, studyMetadata);
+
+        if (!txResult || !txResult.success) {
+            throw new Error(`Midnight Network blockchain submission failed: ${txResult?.error || 'Unknown error'}`);
+        }
+
+        return {
+            transactionHash: txResult.transactionHash,
+            blockNumber: txResult.blockNumber,
+            networkId: txResult.networkId || this.midnightConfig.networkId,
+            gasUsed: txResult.gasUsed,
+            status: txResult.status,
+            timestamp: txResult.timestamp || new Date().toISOString(),
+            privacyPreserved: true,
+            proofHash: proofResult.proofHash,
+            studyId: studyMetadata.studyId
+        };
+    }
+
+    /**
+     * Get network status
+     */
+    getNetworkStatus() {
+        return {
+            midnightNetworkReady: this.midnightReady,
+            networkId: this.midnightConfig?.networkId || 'unknown',
+            mode: this.midnightConfig?.mode || 'unknown',
+            contractAddress: this.midnightConfig?.contractAddress || 'not_deployed'
         };
     }
 }

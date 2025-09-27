@@ -12,8 +12,11 @@ import OrganizationRegistration from './components/OrganizationRegistration';
 import OrganizationManagement from './components/OrganizationManagement';
 import HospitalDataAccessDashboard from './components/HospitalDataAccessDashboard';
 import HospitalDataRequestForm from './components/HospitalDataRequestForm';
-import HospitalDataApprovalDashboard from './components/HospitalDataApprovalDashboard';
+// import HospitalDataApprovalDashboard from './components/HospitalDataApprovalDashboard';
 import ZKProofGenerator from './components/ZKProofGenerator';
+import HospitalAdminAuth from './components/hospital-admin/HospitalAdminAuth';
+import HospitalRegistrationWizard from './components/hospital-admin/HospitalRegistrationWizard';
+import HospitalManagementDashboard from './components/hospital-admin/HospitalManagementDashboard';
 import AuthWrapper from './components/auth/AuthWrapper';
 import { APIProvider } from './hooks/useAPI';
 import { Web3Provider } from './hooks/useWeb3';
@@ -48,27 +51,36 @@ function App() {
     <AuthProvider>
       <Web3Provider>
         <APIProvider>
-          <AuthWrapper>
-            <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-              <Navigation />
-              <Container maxWidth="xl" sx={{ mt: 3, mb: 3, flex: 1 }}>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/hospital/:hospitalId" element={<HospitalDashboard />} />
-                  <Route path="/research" element={<ResearchAggregator />} />
-                  <Route path="/study/:studyId" element={<StudyDetails />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/admin/organizations" element={<OrganizationDashboard />} />
-                  <Route path="/admin/hospital-data" element={<HospitalDataAccessDashboard />} />
-                  <Route path="/organization/register" element={<OrganizationRegistration />} />
-                  <Route path="/organization/:id" element={<OrganizationManagement />} />
-                  <Route path="/hospital-data-request" element={<HospitalDataRequestForm />} />
-                  <Route path="/hospital/data-requests" element={<HospitalDataApprovalDashboard />} />
-                  <Route path="/zk-proof-generator" element={<ZKProofGenerator />} />
-                </Routes>
-              </Container>
-            </Box>
-          </AuthWrapper>
+          <Routes>
+            {/* Hospital Admin Routes - Completely Separate Portal (No Research Auth Required) */}
+            <Route path="/hospital-admin/login" element={<HospitalAdminAuth />} />
+            <Route path="/hospital-admin/register" element={<HospitalRegistrationWizard />} />
+            <Route path="/hospital-admin/dashboard" element={<HospitalManagementDashboard />} />
+            
+            {/* Research Portal Routes - Require Research Authentication */}
+            <Route path="/*" element={
+              <AuthWrapper>
+                <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                  <Navigation />
+                  <Container maxWidth="xl" sx={{ mt: 3, mb: 3, flex: 1 }}>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/hospital/:hospitalId" element={<HospitalDashboard />} />
+                      <Route path="/research" element={<ResearchAggregator />} />
+                      <Route path="/study/:studyId" element={<StudyDetails />} />
+                      <Route path="/admin" element={<AdminDashboard />} />
+                      <Route path="/admin/organizations" element={<OrganizationDashboard />} />
+                      <Route path="/admin/hospital-data" element={<HospitalDataAccessDashboard />} />
+                      <Route path="/organization/register" element={<OrganizationRegistration />} />
+                      <Route path="/organization/:id" element={<OrganizationManagement />} />
+                      <Route path="/hospital-data-request" element={<HospitalDataRequestForm />} />
+                      <Route path="/zk-proof-generator" element={<ZKProofGenerator />} />
+                    </Routes>
+                  </Container>
+                </Box>
+              </AuthWrapper>
+            } />
+          </Routes>
         </APIProvider>
       </Web3Provider>
     </AuthProvider>

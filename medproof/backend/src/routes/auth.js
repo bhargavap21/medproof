@@ -19,6 +19,24 @@ router.post('/create-profile', async (req, res) => {
 
     console.log('🔧 Creating user profile for:', userId, email);
 
+    // First, check if profile already exists
+    const { data: existingProfile, error: fetchError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('❌ Error checking existing profile:', fetchError);
+      return res.status(500).json({ error: fetchError.message });
+    }
+
+    if (existingProfile) {
+      console.log('✅ User profile already exists, returning existing profile:', existingProfile);
+      return res.json({ data: existingProfile });
+    }
+
+    // Profile doesn't exist, create it
     const { data, error } = await supabaseAdmin
       .from('user_profiles')
       .insert({

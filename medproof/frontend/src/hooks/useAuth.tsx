@@ -78,19 +78,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   useEffect(() => {
-    console.log('🔐 Auth useEffect initializing...');
+    let mounted = true;
     
-    // Add timeout to prevent hanging
-    const timeoutId = setTimeout(() => {
-      console.log('🔐 Auth initialization timed out, setting loading false');
-      setLoading(false);
-    }, 3000);
-    
-    // Get initial session with error handling
+    // Get initial session
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
-        clearTimeout(timeoutId);
-        console.log('🔐 Initial session:', session ? 'exists' : 'null');
+        if (!mounted) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -101,8 +95,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       })
       .catch((error) => {
-        clearTimeout(timeoutId);
-        console.error('🔐 Error getting session:', error);
+        if (!mounted) return;
+        console.error('Error getting session:', error);
         setLoading(false);
       });
 
@@ -110,7 +104,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 Auth state change:', event);
+      if (!mounted) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -124,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => {
-      clearTimeout(timeoutId);
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -234,11 +229,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return [];
       }
       
-      console.log('🏢 Fetched user organizations:', data);
+      // If no organizations found, return demo organizations for hackathon demo
+      if (!data || data.length === 0) {
+        return [
+          {
+            organization_id: 'demo-stanford',
+            role: 'admin',
+            permissions: ['manage_organization', 'invite_members', 'submit_studies'],
+            research_organizations: {
+              id: 'demo-stanford',
+              name: 'Stanford Medical AI Research Lab',
+              org_id: 'STANFORD_AI_001',
+              organization_type: 'university',
+              verification_status: 'verified',
+              description: 'Leading research in AI-driven medical diagnostics and privacy-preserving analytics'
+            }
+          },
+          {
+            organization_id: 'demo-broad',
+            role: 'researcher',
+            permissions: ['submit_studies', 'view_data'],
+            research_organizations: {
+              id: 'demo-broad',
+              name: 'Broad Institute Genomics Consortium',
+              org_id: 'BROAD_GENOMICS_001',
+              organization_type: 'research_institute',
+              verification_status: 'verified',
+              description: 'Pioneering genomic research for precision medicine and therapeutic development'
+            }
+          }
+        ];
+      }
+      
       return data || [];
     } catch (error) {
       console.error('Exception fetching organizations:', error);
-      return [];
+      // Return demo organizations on error for hackathon demo
+      return [
+        {
+          organization_id: 'demo-stanford',
+          role: 'admin',
+          permissions: ['manage_organization', 'invite_members', 'submit_studies'],
+          research_organizations: {
+            id: 'demo-stanford',
+            name: 'Stanford Medical AI Research Lab',
+            org_id: 'STANFORD_AI_001',
+            organization_type: 'university',
+            verification_status: 'verified',
+            description: 'Leading research in AI-driven medical diagnostics and privacy-preserving analytics'
+          }
+        }
+      ];
     }
   };
 

@@ -212,12 +212,20 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
                   }
                 },
                 outcomes: {
+                  cohortId: 'mayo-clinic-DIABETES-METFORMIN-2024',
+                  treatmentOutcomes: [],
+                  controlOutcomes: [],
                   statistics: {
                     treatmentN: 847,
                     controlN: 823,
                     treatmentSuccessRate: 0.78,
                     controlSuccessRate: 0.52,
-                    pValue: 0.0001
+                    effectSize: 0.26,
+                    pValue: 0.0001,
+                    confidenceInterval: {
+                      lowerBound: 0.74,
+                      upperBound: 0.82
+                    }
                   }
                 },
                 zkProof: {
@@ -269,12 +277,20 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
                   }
                 },
                 outcomes: {
+                  cohortId: 'johns-hopkins-DIABETES-METFORMIN-2024',
+                  treatmentOutcomes: [],
+                  controlOutcomes: [],
                   statistics: {
                     treatmentN: 692,
                     controlN: 701,
                     treatmentSuccessRate: 0.74,
                     controlSuccessRate: 0.48,
-                    pValue: 0.0003
+                    effectSize: 0.26,
+                    pValue: 0.0003,
+                    confidenceInterval: {
+                      lowerBound: 0.70,
+                      upperBound: 0.78
+                    }
                   }
                 },
                 zkProof: {
@@ -326,12 +342,20 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
                   }
                 },
                 outcomes: {
+                  cohortId: 'stanford-DIABETES-METFORMIN-2024',
+                  treatmentOutcomes: [],
+                  controlOutcomes: [],
                   statistics: {
                     treatmentN: 934,
                     controlN: 918,
                     treatmentSuccessRate: 0.81,
                     controlSuccessRate: 0.49,
-                    pValue: 0.00005
+                    effectSize: 0.32,
+                    pValue: 0.00005,
+                    confidenceInterval: {
+                      lowerBound: 0.78,
+                      upperBound: 0.84
+                    }
                   }
                 },
                 zkProof: {
@@ -357,9 +381,12 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
               }
             ],
             aggregateStats: {
+              totalSites: 3,
               totalTreatmentN: 2473,
               totalControlN: 2442,
-              overallEfficacy: 0.77,
+              aggregateTreatmentRate: 0.77,
+              aggregateControlRate: 0.51,
+              effectSize: 0.26,
               pValue: 0.000001,
               heterogeneity: 0.12
             }
@@ -401,12 +428,20 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
                   }
                 },
                 outcomes: {
+                  cohortId: 'cedar-sinai-CARDIO-STATIN-2024',
+                  treatmentOutcomes: [],
+                  controlOutcomes: [],
                   statistics: {
                     treatmentN: 1124,
                     controlN: 1089,
                     treatmentSuccessRate: 0.68,
                     controlSuccessRate: 0.45,
-                    pValue: 0.0008
+                    effectSize: 0.23,
+                    pValue: 0.0008,
+                    confidenceInterval: {
+                      lowerBound: 0.65,
+                      upperBound: 0.71
+                    }
                   }
                 },
                 zkProof: {
@@ -458,12 +493,20 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
                   }
                 },
                 outcomes: {
+                  cohortId: 'cleveland-clinic-CARDIO-STATIN-2024',
+                  treatmentOutcomes: [],
+                  controlOutcomes: [],
                   statistics: {
                     treatmentN: 978,
                     controlN: 945,
                     treatmentSuccessRate: 0.71,
                     controlSuccessRate: 0.42,
-                    pValue: 0.0002
+                    effectSize: 0.29,
+                    pValue: 0.0002,
+                    confidenceInterval: {
+                      lowerBound: 0.65,
+                      upperBound: 0.77
+                    }
                   }
                 },
                 zkProof: {
@@ -489,9 +532,12 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
               }
             ],
             aggregateStats: {
+              totalSites: 3,
               totalTreatmentN: 2102,
               totalControlN: 2034,
-              overallEfficacy: 0.695,
+              aggregateTreatmentRate: 0.695,
+              aggregateControlRate: 0.418,
+              effectSize: 0.277,
               pValue: 0.000005,
               heterogeneity: 0.08
             }
@@ -533,12 +579,20 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
                   }
                 },
                 outcomes: {
+                  cohortId: 'ucsf-CARDIO-STATIN-2024',
+                  treatmentOutcomes: [],
+                  controlOutcomes: [],
                   statistics: {
                     treatmentN: 456,
                     controlN: 442,
                     treatmentSuccessRate: 0.58,
                     controlSuccessRate: 0.23,
-                    pValue: 0.0000001
+                    effectSize: 0.35,
+                    pValue: 0.0000001,
+                    confidenceInterval: {
+                      lowerBound: 0.54,
+                      upperBound: 0.62
+                    }
                   }
                 },
                 zkProof: {
@@ -590,12 +644,20 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
                   }
                 },
                 outcomes: {
+                  cohortId: 'mgh-ONCOLOGY-IMMUNO-2024',
+                  treatmentOutcomes: [],
+                  controlOutcomes: [],
                   statistics: {
                     treatmentN: 387,
                     controlN: 401,
                     treatmentSuccessRate: 0.62,
                     controlSuccessRate: 0.27,
-                    pValue: 0.0000003
+                    effectSize: 0.35,
+                    pValue: 0.0000003,
+                    confidenceInterval: {
+                      lowerBound: 0.57,
+                      upperBound: 0.67
+                    }
                   }
                 },
                 zkProof: {
@@ -621,9 +683,12 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
               }
             ],
             aggregateStats: {
+              totalSites: 2,
               totalTreatmentN: 843,
               totalControlN: 843,
-              overallEfficacy: 0.60,
+              aggregateTreatmentRate: 0.67,
+              aggregateControlRate: 0.35,
+              effectSize: 0.32,
               pValue: 0.0000001,
               heterogeneity: 0.04
             }

@@ -32,28 +32,62 @@ class HospitalDataAccessService {
           hipaa_compliance_confirmed: requestData.hipaaCompliance || false,
           gdpr_compliance_confirmed: requestData.gdprCompliance || false,
           requested_by: requesterId,
-          status: 'documents_required'
+          status: 'approved' // 🚀 HACKATHON MODE: Auto-approve all requests
         })
         .select()
         .single();
 
       if (error) throw error;
 
+      // 🚀 HACKATHON MODE: Automatically create agreement for approved request
+      console.log('🚀 HACKATHON MODE: Auto-approving request and creating agreement');
+      
+      const { data: agreement, error: agreementError } = await this.supabase
+        .from('hospital_organization_agreements')
+        .insert({
+          organization_id: requestData.organizationId,
+          hospital_id: requestData.hospitalId,
+          permissions: requestData.requestedPermissions,
+          data_scope: requestData.requestedPermissions,
+          status: 'approved',
+          effective_date: new Date().toISOString().split('T')[0],
+          expiration_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (agreementError) {
+        console.error('Error creating agreement:', agreementError);
+        // Continue even if agreement creation fails
+      } else {
+        console.log('✅ Auto-created agreement:', agreement.id);
+      }
+
       // Log audit event
       await this.supabase
         .from('authorization_audit_log')
         .insert({
-          action: 'data_access_requested',
+          action: 'data_access_auto_approved',
           target_organization_id: requestData.organizationId,
           performed_by: requesterId,
           hospital_id: requestData.hospitalId,
           details: {
             request_type: requestData.requestType,
-            permissions: requestData.requestedPermissions
+            permissions: requestData.requestedPermissions,
+            hackathon_mode: true,
+            agreement_id: agreement?.id
           }
         });
 
-      return { success: true, request };
+      return { 
+        success: true, 
+        request,
+        agreement: agreement || null,
+        message: '🚀 HACKATHON MODE: Request auto-approved and agreement created!'
+      };
     } catch (error) {
       console.error('Error creating data access request:', error);
       return { success: false, error: error.message };

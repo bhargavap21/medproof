@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -18,14 +19,12 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Divider,
   Paper,
   IconButton,
   LinearProgress,
 } from '@mui/material';
 import {
   Business,
-  Email,
   Upload,
   CheckCircle,
   Warning,
@@ -35,16 +34,23 @@ import {
   Science,
   Biotech,
   AccountBalance,
-  Apartment,
+  LocalHospital,
+  VolunteerActivism,
 } from '@mui/icons-material';
+import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
+import { Database } from '../types/database.types';
+
+type OrganizationType = Database['public']['Enums']['organization_type'];
+type DocumentType = Database['public']['Enums']['document_type'];
 
 const organizationTypes = [
-  { value: 'university', label: 'University', icon: <School /> },
-  { value: 'research_institute', label: 'Research Institute', icon: <Science /> },
-  { value: 'biotech_company', label: 'Biotech Company', icon: <Biotech /> },
-  { value: 'pharmaceutical', label: 'Pharmaceutical', icon: <Biotech /> },
-  { value: 'government_agency', label: 'Government Agency', icon: <AccountBalance /> },
-  { value: 'ngo', label: 'NGO', icon: <Apartment /> },
+  { value: 'university' as OrganizationType, label: 'University', icon: <School /> },
+  { value: 'research_institute' as OrganizationType, label: 'Research Institute', icon: <Science /> },
+  { value: 'biotech_company' as OrganizationType, label: 'Biotech Company', icon: <Biotech /> },
+  { value: 'pharmaceutical' as OrganizationType, label: 'Pharmaceutical', icon: <LocalHospital /> },
+  { value: 'government_agency' as OrganizationType, label: 'Government Agency', icon: <AccountBalance /> },
+  { value: 'ngo' as OrganizationType, label: 'NGO', icon: <VolunteerActivism /> },
 ];
 
 const requiredDocumentsByType = {
@@ -89,22 +95,30 @@ const requiredDocumentsByType = {
 
 interface OrganizationFormData {
   name: string;
-  organizationType: string;
+  org_id: string;
+  organization_type: OrganizationType;
   description: string;
   website: string;
-  contactEmail: string;
-  primaryContactName: string;
-  primaryContactTitle: string;
-  taxId: string;
-  registrationNumber: string;
-  researchAreas: string[];
+  contact_email: string;
+  primary_contact_name: string;
+  primary_contact_title: string;
+  tax_id: string;
+  registration_number: string;
+  research_areas: string[];
+  ethics_board_approval: boolean;
   address: {
     street: string;
     city: string;
     state: string;
-    zipCode: string;
+    postal_code: string;
     country: string;
   };
+}
+
+interface RequiredDocument {
+  document_type: DocumentType;
+  description: string;
+  is_required: boolean;
 }
 
 interface UploadedDocument {
@@ -116,29 +130,36 @@ interface UploadedDocument {
 }
 
 const OrganizationRegistration: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<OrganizationFormData>({
     name: '',
-    organizationType: '',
+    org_id: '',
+    organization_type: 'university',
     description: '',
     website: '',
-    contactEmail: '',
-    primaryContactName: '',
-    primaryContactTitle: '',
-    taxId: '',
-    registrationNumber: '',
-    researchAreas: [],
+    contact_email: user?.email || '',
+    primary_contact_name: '',
+    primary_contact_title: '',
+    tax_id: '',
+    registration_number: '',
+    research_areas: [],
+    ethics_board_approval: false,
     address: {
       street: '',
       city: '',
       state: '',
-      zipCode: '',
+      postal_code: '',
       country: '',
     },
   });
   const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([]);
+  const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [researchAreaInput, setResearchAreaInput] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const steps = [
     'Organization Information',
@@ -146,6 +167,45 @@ const OrganizationRegistration: React.FC = () => {
     'Document Upload',
     'Review & Submit'
   ];
+
+  // Fetch required documents when organization type changes
+  useEffect(() => {
+    const fetchRequiredDocuments = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_required_documents', {
+          org_type: formData.organization_type
+        });
+
+        if (error) throw error;
+        setRequiredDocuments(data || []);
+      } catch (err) {
+        console.error('Error fetching required documents:', err);
+        // Fallback to hardcoded documents if function doesn't exist
+        const docs = requiredDocumentsByType[formData.organization_type]?.map(doc => ({
+          document_type: doc.type as DocumentType,
+          description: doc.name,
+          is_required: doc.required
+        })) || [];
+        setRequiredDocuments(docs);
+      }
+    };
+
+    if (formData.organization_type) {
+      fetchRequiredDocuments();
+    }
+  }, [formData.organization_type]);
+
+  // Generate org_id from name
+  useEffect(() => {
+    if (formData.name) {
+      const orgId = formData.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+      setFormData(prev => ({ ...prev, org_id: orgId }));
+    }
+  }, [formData.name]);
 
   const handleInputChange = (field: keyof OrganizationFormData, value: any) => {
     setFormData(prev => ({
@@ -168,7 +228,7 @@ const OrganizationRegistration: React.FC = () => {
     if (researchAreaInput.trim()) {
       setFormData(prev => ({
         ...prev,
-        researchAreas: [...prev.researchAreas, researchAreaInput.trim()]
+        research_areas: [...prev.research_areas, researchAreaInput.trim()]
       }));
       setResearchAreaInput('');
     }
@@ -177,7 +237,7 @@ const OrganizationRegistration: React.FC = () => {
   const removeResearchArea = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      researchAreas: prev.researchAreas.filter((_, i) => i !== index)
+      research_areas: prev.research_areas.filter((_, i) => i !== index)
     }));
   };
 
@@ -200,22 +260,17 @@ const OrganizationRegistration: React.FC = () => {
     setUploadedDocuments(prev => prev.filter(doc => doc.id !== docId));
   };
 
-  const getRequiredDocuments = () => {
-    if (!formData.organizationType) return [];
-    return requiredDocumentsByType[formData.organizationType as keyof typeof requiredDocumentsByType] || [];
-  };
-
   const isStepValid = (step: number) => {
     switch (step) {
       case 0:
-        return formData.name && formData.organizationType && formData.description && formData.website;
+        return formData.name && formData.organization_type && formData.description && formData.website;
       case 1:
-        return formData.contactEmail && formData.primaryContactName && 
+        return formData.contact_email && formData.primary_contact_name && 
                formData.address.city && formData.address.country;
       case 2:
-        const requiredDocs = getRequiredDocuments().filter(doc => doc.required);
+        const requiredDocs = requiredDocuments.filter(doc => doc.is_required);
         const uploadedTypes = uploadedDocuments.map(doc => doc.type);
-        return requiredDocs.every(doc => uploadedTypes.includes(doc.type));
+        return requiredDocs.every(doc => uploadedTypes.includes(doc.document_type));
       default:
         return true;
     }
@@ -232,17 +287,80 @@ const OrganizationRegistration: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    if (!user) {
+      setError('You must be logged in to register an organization.');
+      return;
+    }
+
     setSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Create organization record
-    console.log('Submitting organization:', formData);
-    console.log('Documents:', uploadedDocuments);
-    
-    setSubmitting(false);
-    // Navigate to success page or dashboard
+    setError(null);
+
+    try {
+      console.log('🏢 Submitting organization:', formData.name);
+      
+      // Create organization with auto-approval
+      const { data: orgData, error: orgError } = await supabase
+        .from('research_organizations')
+        .insert({
+          name: formData.name,
+          org_id: formData.org_id,
+          organization_type: formData.organization_type,
+          description: formData.description,
+          website: formData.website,
+          contact_email: formData.contact_email,
+          address: formData.address,
+          tax_id: formData.tax_id,
+          registration_number: formData.registration_number,
+          primary_contact_name: formData.primary_contact_name,
+          primary_contact_title: formData.primary_contact_title,
+          research_areas: formData.research_areas,
+          ethics_board_approval: formData.ethics_board_approval,
+          verification_status: 'verified', // Auto-approve for now
+          verification_level: 'premium',
+        })
+        .select()
+        .single();
+
+      if (orgError) {
+        console.error('🏢 Organization creation error:', orgError);
+        throw orgError;
+      }
+
+      console.log('🏢 Organization created:', orgData);
+
+      // Create organization membership for the user
+      const { error: membershipError } = await supabase
+        .from('organization_memberships')
+        .insert({
+          user_id: user.id,
+          organization_id: orgData.id,
+          role: 'admin',
+          permissions: ['view_data', 'submit_studies', 'manage_members', 'manage_documents'],
+          is_active: true,
+        });
+
+      if (membershipError) {
+        console.error('🏢 Membership creation error:', membershipError);
+        throw membershipError;
+      }
+
+      console.log('🏢 Membership created successfully');
+
+      // Success! Organization is auto-approved
+      console.log('🏢 Organization registration complete - auto-approved!');
+      
+      // Show success message and redirect to dashboard
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+      
+      setSuccess(true);
+    } catch (err: any) {
+      console.error('Organization registration error:', err);
+      setError(err.message || 'Failed to register organization. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getOrganizationIcon = (type: string) => {
@@ -250,11 +368,49 @@ const OrganizationRegistration: React.FC = () => {
     return orgType?.icon || <Business />;
   };
 
+  if (success) {
+    return (
+      <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 6 }}>
+            <CheckCircle sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
+            <Typography variant="h4" gutterBottom>
+              Organization Registered Successfully!
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              Your organization has been automatically approved and is now ready to use. 
+              You will be redirected to the dashboard shortly.
+            </Typography>
+            <Alert severity="success" sx={{ mt: 2 }}>
+              <Typography variant="body2">
+                <strong>✅ Your organization is now active!</strong>
+                <br />
+                You can now access all organization features including:
+                <br />
+                • Manage organization members
+                <br />
+                • Submit research studies
+                <br />
+                • Access hospital data (with permissions)
+              </Typography>
+            </Alert>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ p: 3, maxWidth: 1000, mx: 'auto' }}>
       <Typography variant="h3" component="h1" sx={{ mb: 4, textAlign: 'center' }}>
         Register Your Organization
       </Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
       
       <Paper sx={{ p: 3 }}>
         <Stepper activeStep={activeStep} orientation="vertical">
@@ -280,8 +436,8 @@ const OrganizationRegistration: React.FC = () => {
                       fullWidth
                       select
                       label="Organization Type"
-                      value={formData.organizationType}
-                      onChange={(e) => handleInputChange('organizationType', e.target.value)}
+                      value={formData.organization_type}
+                      onChange={(e) => handleInputChange('organization_type', e.target.value)}
                       required
                     >
                       {organizationTypes.map((type) => (
@@ -344,8 +500,8 @@ const OrganizationRegistration: React.FC = () => {
                       fullWidth
                       label="Contact Email"
                       type="email"
-                      value={formData.contactEmail}
-                      onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                      value={formData.contact_email}
+                      onChange={(e) => handleInputChange('contact_email', e.target.value)}
                       required
                       placeholder="research@your-organization.edu"
                       helperText="Must use your institution's email domain"
@@ -356,8 +512,8 @@ const OrganizationRegistration: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Primary Contact Name"
-                      value={formData.primaryContactName}
-                      onChange={(e) => handleInputChange('primaryContactName', e.target.value)}
+                      value={formData.primary_contact_name}
+                      onChange={(e) => handleInputChange('primary_contact_name', e.target.value)}
                       required
                       placeholder="Dr. Jane Smith"
                     />
@@ -367,8 +523,8 @@ const OrganizationRegistration: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Primary Contact Title"
-                      value={formData.primaryContactTitle}
-                      onChange={(e) => handleInputChange('primaryContactTitle', e.target.value)}
+                      value={formData.primary_contact_title}
+                      onChange={(e) => handleInputChange('primary_contact_title', e.target.value)}
                       placeholder="Director of Research"
                     />
                   </Grid>
@@ -377,8 +533,8 @@ const OrganizationRegistration: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Tax ID / EIN"
-                      value={formData.taxId}
-                      onChange={(e) => handleInputChange('taxId', e.target.value)}
+                      value={formData.tax_id}
+                      onChange={(e) => handleInputChange('tax_id', e.target.value)}
                       placeholder="XX-XXXXXXX"
                     />
                   </Grid>
@@ -419,8 +575,8 @@ const OrganizationRegistration: React.FC = () => {
                     <TextField
                       fullWidth
                       label="ZIP/Postal Code"
-                      value={formData.address.zipCode}
-                      onChange={(e) => handleAddressChange('zipCode', e.target.value)}
+                      value={formData.address.postal_code}
+                      onChange={(e) => handleAddressChange('postal_code', e.target.value)}
                     />
                   </Grid>
                   
@@ -442,7 +598,7 @@ const OrganizationRegistration: React.FC = () => {
                         label="Add Research Area"
                         value={researchAreaInput}
                         onChange={(e) => setResearchAreaInput(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddResearchArea()}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddResearchArea()}
                         placeholder="e.g., cardiology, oncology, AI in medicine"
                       />
                       <Button 
@@ -454,7 +610,7 @@ const OrganizationRegistration: React.FC = () => {
                       </Button>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      {formData.researchAreas.map((area, index) => (
+                      {formData.research_areas.map((area: string, index: number) => (
                         <Chip
                           key={index}
                           label={area}
@@ -491,35 +647,35 @@ const OrganizationRegistration: React.FC = () => {
                 </Alert>
                 
                 <Typography variant="h6" sx={{ mb: 2 }}>
-                  Required Documents for {organizationTypes.find(t => t.value === formData.organizationType)?.label}
+                  Required Documents for {organizationTypes.find(t => t.value === formData.organization_type)?.label}
                 </Typography>
                 
                 <List>
-                  {getRequiredDocuments().map((doc, index) => {
-                    const isUploaded = uploadedDocuments.some(uploaded => uploaded.type === doc.type);
+                  {requiredDocuments.map((doc, index) => {
+                    const isUploaded = uploadedDocuments.some(uploaded => uploaded.type === doc.document_type);
                     return (
                       <ListItem key={index} sx={{ border: 1, borderColor: 'divider', mb: 1, borderRadius: 1 }}>
                         <ListItemIcon>
                           {isUploaded ? (
                             <CheckCircle color="success" />
-                          ) : doc.required ? (
+                          ) : doc.is_required ? (
                             <Warning color="warning" />
                           ) : (
                             <Upload />
                           )}
                         </ListItemIcon>
                         <ListItemText
-                          primary={doc.name}
-                          secondary={doc.required ? 'Required' : 'Optional'}
+                          primary={doc.description}
+                          secondary={doc.is_required ? 'Required' : 'Optional'}
                         />
                         <input
                           accept=".pdf,.jpg,.jpeg,.png"
                           style={{ display: 'none' }}
-                          id={`upload-${doc.type}`}
+                          id={`upload-${doc.document_type}`}
                           type="file"
-                          onChange={(e) => handleFileUpload(e, doc.type)}
+                          onChange={(e) => handleFileUpload(e, doc.document_type)}
                         />
-                        <label htmlFor={`upload-${doc.type}`}>
+                        <label htmlFor={`upload-${doc.document_type}`}>
                           <Button
                             variant="outlined"
                             component="span"
@@ -586,7 +742,7 @@ const OrganizationRegistration: React.FC = () => {
                 <Card sx={{ mb: 3 }}>
                   <CardContent>
                     <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {getOrganizationIcon(formData.organizationType)}
+                      {getOrganizationIcon(formData.organization_type)}
                       Organization Information
                     </Typography>
                     
@@ -598,7 +754,7 @@ const OrganizationRegistration: React.FC = () => {
                       <Grid item xs={12} md={6}>
                         <Typography variant="body2" color="text.secondary">Type</Typography>
                         <Typography variant="body1">
-                          {organizationTypes.find(t => t.value === formData.organizationType)?.label}
+                          {organizationTypes.find(t => t.value === formData.organization_type)?.label}
                         </Typography>
                       </Grid>
                       <Grid item xs={12}>
@@ -611,7 +767,7 @@ const OrganizationRegistration: React.FC = () => {
                       </Grid>
                       <Grid item xs={12} md={6}>
                         <Typography variant="body2" color="text.secondary">Contact Email</Typography>
-                        <Typography variant="body1">{formData.contactEmail}</Typography>
+                        <Typography variant="body1">{formData.contact_email}</Typography>
                       </Grid>
                     </Grid>
                   </CardContent>

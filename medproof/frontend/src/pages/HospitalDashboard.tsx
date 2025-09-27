@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Grid,
@@ -44,6 +44,7 @@ import { useWeb3 } from '../hooks/useWeb3';
 
 const HospitalDashboard: React.FC = () => {
   const { hospitalId } = useParams<{ hospitalId: string }>();
+  const navigate = useNavigate();
   const { hospitals, error, generateCohort, generateProof, connectToFHIR } = useAPI();
   const { isConnected, submitProof, isHospitalAuthorized } = useWeb3();
   
@@ -256,7 +257,7 @@ const HospitalDashboard: React.FC = () => {
             ))}
           </Box>
 
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={6} md={3}>
               <Typography variant="body2">Active Studies</Typography>
               <Typography variant="h6">{hospital.activeStudies || 0}</Typography>
@@ -266,6 +267,16 @@ const HospitalDashboard: React.FC = () => {
               <Typography variant="h6">{hospital.totalPatients?.toLocaleString() || '0'}</Typography>
             </Grid>
           </Grid>
+          
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/hospital/data-requests')}
+              startIcon={<Assessment />}
+            >
+              Review Data Requests
+            </Button>
+          </Box>
         </CardContent>
       </Card>
 

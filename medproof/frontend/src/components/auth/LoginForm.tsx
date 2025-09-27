@@ -131,6 +131,28 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
             </Typography>
           </Box>
 
+          {/* Cross-link to Hospital Admin Portal */}
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Are you a hospital administrator?
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => window.location.href = '/hospital-admin/login'}
+              sx={{ 
+                color: '#1976d2', 
+                borderColor: '#1976d2',
+                '&:hover': {
+                  borderColor: '#1565c0',
+                  bgcolor: 'rgba(25, 118, 210, 0.04)'
+                }
+              }}
+            >
+              Hospital Admin Portal
+            </Button>
+          </Box>
+
           <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
             <Typography variant="caption" color="text.secondary" align="center" display="block">
               🔒 Secured by zero-knowledge proofs on Midnight Network

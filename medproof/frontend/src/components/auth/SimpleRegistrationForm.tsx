@@ -37,31 +37,8 @@ const SimpleRegistrationForm: React.FC<SimpleRegistrationFormProps> = ({ onToggl
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Check localStorage on component mount to restore success state
-  const [success, setSuccess] = useState(() => {
-    const saved = localStorage.getItem('registration_success');
-    return saved === 'true';
-  });
-  const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(() => {
-    const saved = localStorage.getItem('registration_email_confirmation');
-    return saved === 'true';
-  });
-  
-  // Use refs to preserve success state and prevent resets
-  const successRef = React.useRef(false);
-  const emailConfirmationRef = React.useRef(false);
-
-  // Debug state changes
-  React.useEffect(() => {
-    console.log('🔄 State changed - success:', success, 'emailConfirmationRequired:', emailConfirmationRequired);
-  }, [success, emailConfirmationRequired]);
-
-  // Prevent auth state changes from resetting our success state
-  React.useEffect(() => {
-    if (success) {
-      console.log('🔒 Success state is true, preventing resets');
-    }
-  }, [loading]); // Monitor loading changes that might reset state
+  const [success, setSuccess] = useState(false);
+  const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
 
   const [formData, setFormData] = useState<RegistrationData>({
     email: '',
@@ -101,20 +78,14 @@ const SimpleRegistrationForm: React.FC<SimpleRegistrationFormProps> = ({ onToggl
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('🚀 Form submission started');
     e.preventDefault();
     setError(null);
     
-    console.log('📝 Form data:', formData);
-    
-    const error = validate();
-    if (error) {
-      console.error('❌ Validation error:', error);
-      setError(error);
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
-
-    console.log('✅ Validation passed, calling signUp...');
 
     try {
       const { data, error: signUpError } = await signUp(formData.email, formData.password, {
@@ -125,66 +96,31 @@ const SimpleRegistrationForm: React.FC<SimpleRegistrationFormProps> = ({ onToggl
       });
 
       if (signUpError) {
-        console.error('❌ Registration error:', signUpError);
         setError(signUpError.message || 'Registration failed. Please try again.');
       } else if (data?.user) {
-        console.log('✅ Registration successful:', data);
-        
         // Check if email confirmation is required
         if (!data.session && data.user && !data.user.email_confirmed_at) {
-          console.log('📧 Email confirmation required - setting states');
-          successRef.current = true;
-          emailConfirmationRef.current = true;
-          localStorage.setItem('registration_success', 'true');
-          localStorage.setItem('registration_email_confirmation', 'true');
-          localStorage.setItem('registration_email', formData.email);
           setEmailConfirmationRequired(true);
           setSuccess(true);
-          console.log('📧 States set - emailConfirmationRequired: true, success: true');
         } else {
-          console.log('✅ User authenticated immediately - setting states');
-          successRef.current = true;
-          emailConfirmationRef.current = false;
-          localStorage.setItem('registration_success', 'true');
-          localStorage.setItem('registration_email_confirmation', 'false');
-          localStorage.setItem('registration_email', formData.email);
           setEmailConfirmationRequired(false);
           setSuccess(true);
-          console.log('✅ States set - emailConfirmationRequired: false, success: true');
         }
       } else {
-        console.error('❌ Unexpected registration response:', data);
         setError('Registration completed but something went wrong. Please try signing in.');
       }
     } catch (err) {
-      console.error('❌ Unexpected registration error:', err);
-      console.error('❌ Error stack:', err instanceof Error ? err.stack : 'No stack trace');
-      console.error('❌ Error details:', {
-        name: err instanceof Error ? err.name : 'Unknown',
-        message: err instanceof Error ? err.message : 'Unknown error'
-      });
       setError(`Registration failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
-  console.log('🎯 Render check - success:', success, 'emailConfirmationRequired:', emailConfirmationRequired);
-  console.log('🔍 Ref check - successRef:', successRef.current, 'emailConfirmationRef:', emailConfirmationRef.current);
-  
-  // Use refs and localStorage as fallback if state gets reset
-  const shouldShowSuccess = success || successRef.current || localStorage.getItem('registration_success') === 'true';
-  const shouldShowEmailConfirmation = emailConfirmationRequired || emailConfirmationRef.current || localStorage.getItem('registration_email_confirmation') === 'true';
-  
-  // Get email from localStorage if needed
-  const displayEmail = formData.email || localStorage.getItem('registration_email') || '';
-  
-  if (shouldShowSuccess) {
-    console.log('🎉 Rendering success screen');
+  if (success) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', p: 3 }}>
         <Card sx={{ maxWidth: 500, width: '100%' }}>
           <CardContent sx={{ p: 4, textAlign: 'center' }}>
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-              {shouldShowEmailConfirmation ? (
+              {emailConfirmationRequired ? (
                 <Email sx={{ fontSize: 60, color: 'warning.main' }} />
               ) : (
                 <LocalHospital sx={{ fontSize: 60, color: 'success.main' }} />
@@ -192,18 +128,18 @@ const SimpleRegistrationForm: React.FC<SimpleRegistrationFormProps> = ({ onToggl
             </Box>
             
             <Typography variant="h4" sx={{ mb: 2, color: 'success.main' }}>
-              {shouldShowEmailConfirmation ? 'Check Your Email!' : 'Account Created!'}
+              {emailConfirmationRequired ? 'Check Your Email!' : 'Account Created!'}
             </Typography>
             
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary' }}>
-              {shouldShowEmailConfirmation 
-                ? `We've sent a confirmation email to ${displayEmail}. Please check your inbox and click the verification link to complete your registration.`
+              {emailConfirmationRequired 
+                ? `We've sent a confirmation email to ${formData.email}. Please check your inbox and click the verification link to complete your registration.`
                 : 'Welcome to MedProof! Your account has been created successfully.'
               }
             </Typography>
             
-            <Alert severity={shouldShowEmailConfirmation ? "warning" : "info"} sx={{ mb: 3 }}>
-              {shouldShowEmailConfirmation 
+            <Alert severity={emailConfirmationRequired ? "warning" : "info"} sx={{ mb: 3 }}>
+              {emailConfirmationRequired 
                 ? 'Please verify your email address before you can sign in and start using MedProof.'
                 : 'You can now create or join research organizations to access hospital data and collaborate on studies.'
               }
@@ -211,13 +147,7 @@ const SimpleRegistrationForm: React.FC<SimpleRegistrationFormProps> = ({ onToggl
             
             <Button
               variant="contained"
-              onClick={() => {
-                // Clean up localStorage before going to login
-                localStorage.removeItem('registration_success');
-                localStorage.removeItem('registration_email_confirmation');
-                localStorage.removeItem('registration_email');
-                onToggleMode();
-              }}
+              onClick={onToggleMode}
               sx={{ mt: 2 }}
               size="large"
             >
@@ -399,6 +329,27 @@ const SimpleRegistrationForm: React.FC<SimpleRegistrationFormProps> = ({ onToggl
             <Typography variant="body2" color="text.secondary">
               • Request access to hospital data for approved studies
             </Typography>
+          </Box>
+
+          {/* Cross-link to Hospital Admin Portal */}
+          <Box sx={{ mt: 3, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Are you a hospital administrator?
+            </Typography>
+            <Button
+              variant="outlined"
+              onClick={() => window.location.href = '/hospital-admin/login'}
+              sx={{ 
+                color: '#2e7d32', 
+                borderColor: '#2e7d32',
+                '&:hover': {
+                  borderColor: '#1b5e20',
+                  bgcolor: 'rgba(46, 125, 50, 0.04)'
+                }
+              }}
+            >
+              Hospital Admin Portal
+            </Button>
           </Box>
         </CardContent>
       </Card>
