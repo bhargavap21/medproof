@@ -336,7 +336,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           borderBottom: '1px solid #e0e0e0',
         }}>
           {open ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                flexGrow: 1,
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.8,
+                },
+              }}
+              onClick={() => navigate('/')}
+            >
               <LocalHospital sx={{
                 mr: 2,
                 fontSize: 28,
@@ -353,11 +364,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
               </Typography>
             </Box>
           ) : (
-            <LocalHospital sx={{
-              fontSize: 28,
-              color: 'primary.main',
-              mx: 'auto',
-            }} />
+            <LocalHospital 
+              sx={{
+                fontSize: 28,
+                color: 'primary.main',
+                mx: 'auto',
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.8,
+                },
+              }}
+              onClick={() => navigate('/')}
+            />
           )}
         </Box>
 
