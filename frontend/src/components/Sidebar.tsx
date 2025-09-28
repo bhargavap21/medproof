@@ -80,9 +80,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       items: [
         {
           path: '',
-          label: 'Organizations',
+          label: 'Dashboard',
           icon: <Dashboard />,
-          description: 'Manage your research organizations'
+          description: 'Platform overview and statistics'
         }
       ]
     },
@@ -108,19 +108,19 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           description: 'Generate privacy proofs'
         },
         {
-          path: 'study',
+          path: 'study-request',
           label: 'Study Management',
           icon: <Description />,
           description: 'Manage research studies',
           children: [
             {
-              path: 'study/create',
-              label: 'Create Study',
+              path: 'study-request/create',
+              label: 'Create Study Request',
               icon: <PersonAdd />,
             },
             {
-              path: 'study/active',
-              label: 'Active Studies',
+              path: 'study-requests',
+              label: 'Manage Requests',
               icon: <Assessment />,
             }
           ]
@@ -194,9 +194,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
 
   const isActive = (path: string) => {
     if (path === '') {
-      return location.pathname === '/app' || location.pathname === '/app/';
+      return location.pathname === '/' || location.pathname === '';
     }
-    const fullPath = `/app/${path}`;
+    const fullPath = `/${path}`;
     return location.pathname === fullPath || location.pathname.startsWith(fullPath + '/');
   };
 
@@ -224,11 +224,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
             if (hasChildren) {
               toggleExpanded(item.path);
             } else {
-              // Handle empty path for dashboard - navigate to app dashboard
+              // Handle empty path for dashboard - navigate to root
               if (item.path === '') {
-                navigate('/app/');
+                navigate('/');
               } else {
-                navigate(item.path);
+                navigate(`/${item.path}`);
               }
             }
           }}

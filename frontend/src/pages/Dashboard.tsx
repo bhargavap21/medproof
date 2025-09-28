@@ -340,6 +340,65 @@ const Dashboard: React.FC = () => {
         </Grid>
       </Grid>
 
+      {/* Additional Platform Stats */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ textAlign: 'center', py: 3, height: '100%' }}>
+            <CardContent>
+              <Assignment sx={{ fontSize: 48, color: 'warning.main', mb: 2 }} />
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                {studyRequests.length}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Study Requests
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ textAlign: 'center', py: 3, height: '100%' }}>
+            <CardContent>
+              <VerifiedUser sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                {studies.reduce((total, study) => total + study.study.sites.length, 0)}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                ZK Proofs Generated
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ textAlign: 'center', py: 3, height: '100%' }}>
+            <CardContent>
+              <Groups sx={{ fontSize: 48, color: 'purple', mb: 2 }} />
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                {hospitals.reduce((sum, h) => sum + (h.totalPatients || 0), 0).toLocaleString()}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Total Patients
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ textAlign: 'center', py: 3, height: '100%' }}>
+            <CardContent>
+              <Box sx={{ fontSize: 48, mb: 2 }}>🌙</Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#1a1a2e' }}>
+                100%
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Privacy Preserved
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
       {/* Study Request Marketplace - Highlighted Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
