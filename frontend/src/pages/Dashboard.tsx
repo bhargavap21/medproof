@@ -5,7 +5,6 @@ import {
   Grid,
   Card,
   CardContent,
-  CardActions,
   Typography,
   Button,
   Chip,
@@ -13,37 +12,34 @@ import {
   Alert,
   Container,
   Avatar,
-  Divider,
+  IconButton,
+  Tooltip,
+  Fab,
 } from '@mui/material';
 import {
-  LocalHospital,
-  Science,
-  VerifiedUser,
-  TrendingUp,
-  Groups,
-  Assessment,
   Business,
-  PersonAdd,
   Add,
   School,
+  Science,
   Biotech,
+  LocalHospital,
   AccountBalance,
   VolunteerActivism,
+  VerifiedUser,
+  Settings,
+  Launch,
+  TrendingUp,
+  People,
+  Description,
 } from '@mui/icons-material';
-import { useAPI } from '../hooks/useAPI';
 import { useAuth } from '../hooks/useAuth';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { hospitals, studies, loading, error, loadHospitals, loadDemoStudies } = useAPI();
   const { user, profile, getUserOrganizations } = useAuth();
   const [organizations, setOrganizations] = useState<any[]>([]);
-  const [orgLoading, setOrgLoading] = useState(true);
-
-  useEffect(() => {
-    loadHospitals();
-    loadDemoStudies();
-  }, [loadHospitals, loadDemoStudies]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadUserOrganizations = async () => {
@@ -53,478 +49,369 @@ const Dashboard: React.FC = () => {
           setOrganizations(userOrgs);
         } catch (error) {
           console.error('Error loading organizations:', error);
+          setError('Failed to load organizations');
         } finally {
-          setOrgLoading(false);
+          setLoading(false);
         }
       } else {
-        setOrgLoading(false);
+        setLoading(false);
       }
     };
-    
+
     loadUserOrganizations();
   }, [user, getUserOrganizations]);
 
-  const handleViewHospital = (hospitalId: string) => {
-    navigate(`/hospital/${hospitalId}`);
-  };
-
-  const handleViewResearch = () => {
-    navigate('/research');
-  };
-
   const handleRegisterOrganization = () => {
-    navigate('/organization/register');
+    navigate('organization/register');
   };
 
   const handleViewOrganization = (orgId: string) => {
-    navigate(`/organization/${orgId}`);
-  };
-
-  // const handleRequestHospitalData = () => {
-  //   navigate('/hospital-data-request');
-  // };
-
-  const handleGenerateZKProof = () => {
-    navigate('/zk-proof-generator');
+    navigate(`organization/${orgId}`);
   };
 
   const getOrganizationIcon = (type: string) => {
-    switch (type) {
-      case 'university':
-        return <School />;
-      case 'research_institute':
-        return <Science />;
-      case 'biotech_company':
-        return <Biotech />;
-      case 'pharmaceutical':
-        return <LocalHospital />;
-      case 'government_agency':
-        return <AccountBalance />;
-      case 'ngo':
-        return <VolunteerActivism />;
-      default:
-        return <Business />;
-    }
+    const icons = {
+      university: <School />,
+      research_institute: <Science />,
+      biotech_company: <Biotech />,
+      pharmaceutical: <LocalHospital />,
+      government_agency: <AccountBalance />,
+      ngo: <VolunteerActivism />,
+    };
+    return icons[type as keyof typeof icons] || <Business />;
   };
 
   const getVerificationColor = (status: string) => {
-    switch (status) {
-      case 'verified':
-        return 'success';
-      case 'pending':
-        return 'warning';
-      case 'rejected':
-        return 'error';
-      default:
-        return 'default';
-    }
+    const colors = {
+      verified: '#4caf50',
+      pending: '#ff9800',
+      rejected: '#f44336',
+    };
+    return colors[status as keyof typeof colors] || '#9e9e9e';
   };
 
-  if ((loading && hospitals.length === 0) || (orgLoading && user)) {
+  const getOrganizationTypeLabel = (type: string) => {
+    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  if (loading) {
     return (
-      <Container>
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h4" gutterBottom>Loading Dashboard...</Typography>
-          <LinearProgress />
+      <Container maxWidth="lg">
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 3 }}>
+          <Business sx={{ fontSize: 60, color: 'primary.main' }} />
+          <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary' }}>
+            Loading Organization Dashboard
+          </Typography>
+          <LinearProgress sx={{ width: 300, borderRadius: 2 }} />
         </Box>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="xl">
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-          MedProof Dashboard
+    <Container maxWidth="lg">
+      {/* Header Section */}
+      <Box sx={{ mb: 6, textAlign: 'center' }}>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: 700, mb: 2, color: 'text.primary' }}>
+          Organization Dashboard
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
-          Privacy-preserving medical research collaboration platform
+        <Typography variant="h6" color="text.secondary" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
+          Manage your research organizations and collaborate with medical institutions through our privacy-preserving platform
         </Typography>
-        
-        {/* Midnight Network Showcase */}
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 2, 
-          p: 3, 
-          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', 
-          color: 'white', 
-          borderRadius: 3,
-          border: '1px solid rgba(255,255,255,0.1)',
-          mb: 2,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
-        }}>
-          <Box sx={{ fontSize: 40 }}>🌙</Box>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-              Built on Midnight Network
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              Enabling secure, privacy-preserving medical research through zero-knowledge proofs and programmable privacy
-            </Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center', minWidth: 100 }}>
-            <Typography variant="caption" sx={{ opacity: 0.7 }}>
-              ZK-SNARKS
-            </Typography>
-            <Typography variant="h6" sx={{ color: '#4caf50', fontWeight: 600 }}>
-              VERIFIED
-            </Typography>
-          </Box>
-        </Box>
-        
+
+        {/* Welcome User Section */}
+        {user && (
+          <Card sx={{ maxWidth: 500, mx: 'auto', mb: 4, background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white' }}>
+            <CardContent sx={{ py: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                <Avatar sx={{ width: 50, height: 50, bgcolor: 'rgba(255,255,255,0.2)' }}>
+                  {profile?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+                </Avatar>
+                <Box sx={{ textAlign: 'left' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Welcome, {profile?.first_name || user?.email?.split('@')[0]}!
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    {profile?.role?.replace('_', ' ') || 'Researcher'}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
             {error}
           </Alert>
         )}
       </Box>
 
-      {/* Overview Stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      {/* Stats Overview */}
+      <Grid container spacing={3} sx={{ mb: 6 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Business sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-              <Box>
-                <Typography color="text.secondary" gutterBottom>
-                  My Organizations
-                </Typography>
-                <Typography variant="h4" component="div">
-                  {organizations.length}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <VerifiedUser sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
-              <Box>
-                <Typography color="text.secondary" gutterBottom>
-                  Verified Orgs
-                </Typography>
-                <Typography variant="h4" component="div">
-                  {organizations.filter(org => org.research_organizations?.verification_status === 'verified').length}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Science sx={{ fontSize: 40, color: 'secondary.main', mr: 2 }} />
-              <Box>
-                <Typography color="text.secondary" gutterBottom>
-                  Active Studies
-                </Typography>
-                <Typography variant="h4" component="div">
-                  {studies.length}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <LocalHospital sx={{ fontSize: 40, color: 'info.main', mr: 2 }} />
-              <Box>
-                <Typography color="text.secondary" gutterBottom>
-                  Partner Hospitals
-                </Typography>
-                <Typography variant="h4" component="div">
-                  {hospitals.length}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Quick Actions */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
-          <Card>
+          <Card sx={{ textAlign: 'center', py: 3, height: '100%' }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                <Assessment sx={{ mr: 1 }} />
-                Research Aggregator
+              <Business sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                {organizations.length}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Analyze and aggregate research findings across multiple hospitals while preserving patient privacy.
+              <Typography variant="body1" color="text.secondary">
+                Total Organizations
               </Typography>
             </CardContent>
-            <CardActions>
-              <Button 
-                variant="contained" 
-                onClick={handleViewResearch}
-                startIcon={<TrendingUp />}
-              >
-                View Research
-              </Button>
-            </CardActions>
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={4}>
-          <Card>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ textAlign: 'center', py: 3, height: '100%' }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                <LocalHospital sx={{ mr: 1 }} />
-                Hospital Data Network
+              <VerifiedUser sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                {organizations.filter(org => org.research_organizations?.verification_status === 'verified').length}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Connect with {hospitals.length} verified hospitals in our privacy-preserving research network powered by Midnight.
+              <Typography variant="body1" color="text.secondary">
+                Verified
               </Typography>
             </CardContent>
-            <CardActions>
-              <Button 
-                variant="contained" 
-                onClick={() => navigate('/research')}
-                startIcon={<Assessment />}
-                color="secondary"
-              >
-                Explore Network
-              </Button>
-            </CardActions>
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={4}>
-          <Card>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ textAlign: 'center', py: 3, height: '100%' }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                <VerifiedUser sx={{ mr: 1 }} />
-                Zero-Knowledge Proofs
+              <TrendingUp sx={{ fontSize: 48, color: 'warning.main', mb: 2 }} />
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                {organizations.filter(org => org.research_organizations?.verification_status === 'pending').length}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Generate and verify cryptographic proofs that validate research findings without exposing sensitive data.
+              <Typography variant="body1" color="text.secondary">
+                Pending
               </Typography>
             </CardContent>
-            <CardActions>
-              <Button 
-                variant="contained"
-                onClick={handleGenerateZKProof}
-                startIcon={<VerifiedUser />}
-                color="primary"
-              >
-                Generate Proofs
-              </Button>
-            </CardActions>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ textAlign: 'center', py: 3, height: '100%' }}>
+            <CardContent>
+              <People sx={{ fontSize: 48, color: 'info.main', mb: 2 }} />
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                {organizations.reduce((total, org) => {
+                  const roleLevel = org.role === 'admin' ? 3 : org.role === 'member' ? 2 : 1;
+                  return total + roleLevel;
+                }, 0)}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Access Level
+              </Typography>
+            </CardContent>
           </Card>
         </Grid>
       </Grid>
 
       {/* Organizations Section */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+      <Box sx={{ mb: 6 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: 600, color: 'text.primary' }}>
             My Organizations
           </Typography>
           <Button
             variant="contained"
+            size="large"
             startIcon={<Add />}
             onClick={handleRegisterOrganization}
-            sx={{ minWidth: 'auto' }}
+            sx={{
+              px: 3,
+              py: 1.5,
+              borderRadius: 2,
+              fontWeight: 600,
+              boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+              '&:hover': {
+                boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
+              }
+            }}
           >
-            Register Organization
+            Register New Organization
           </Button>
         </Box>
 
-        {orgLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <LinearProgress sx={{ width: '100%' }} />
-          </Box>
-        ) : organizations.length > 0 ? (
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+        {organizations.length > 0 ? (
+          <Grid container spacing={4}>
             {organizations.map((orgMembership) => {
               const org = orgMembership.research_organizations;
               if (!org) return null;
-              
+
               return (
-                <Grid item xs={12} sm={6} md={4} key={org.id}>
+                <Grid item xs={12} md={6} lg={4} key={org.id}>
                   <Card
                     sx={{
                       height: '100%',
                       display: 'flex',
                       flexDirection: 'column',
-                      transition: 'transform 0.2s',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer',
                       '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: 4,
+                        transform: 'translateY(-8px)',
+                        boxShadow: '0 12px 24px rgba(0,0,0,0.15)',
                       },
                     }}
+                    onClick={() => handleViewOrganization(org.id)}
                   >
-                    <CardContent sx={{ flexGrow: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                    <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                      {/* Header */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <Avatar
+                          sx={{
+                            width: 56,
+                            height: 56,
+                            mr: 2,
+                            bgcolor: 'primary.main',
+                            boxShadow: '0 4px 8px rgba(25, 118, 210, 0.3)'
+                          }}
+                        >
                           {getOrganizationIcon(org.organization_type)}
                         </Avatar>
-                        <Box sx={{ flexGrow: 1 }}>
-                          <Typography variant="h6" component="h2" noWrap>
+                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {org.name}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {org.organization_type.replace('_', ' ').toUpperCase()}
+                          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                            {getOrganizationTypeLabel(org.organization_type)}
+                          </Typography>
+                        </Box>
+                        <IconButton size="small" sx={{ color: 'text.secondary' }}>
+                          <Launch fontSize="small" />
+                        </IconButton>
+                      </Box>
+
+                      {/* Status Badges */}
+                      <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
+                        <Chip
+                          label={org.verification_status.toUpperCase()}
+                          size="small"
+                          sx={{
+                            bgcolor: getVerificationColor(org.verification_status) + '20',
+                            color: getVerificationColor(org.verification_status),
+                            border: `1px solid ${getVerificationColor(org.verification_status)}40`,
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                        <Chip
+                          label={orgMembership.role.toUpperCase()}
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          sx={{ fontWeight: 600, fontSize: '0.75rem' }}
+                        />
+                      </Box>
+
+                      {/* Description */}
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          mb: 3,
+                          lineHeight: 1.6,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {org.description || 'Research organization focused on advancing medical knowledge through collaborative studies.'}
+                      </Typography>
+
+                      {/* Organization Details */}
+                      <Box sx={{ pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Description sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <Typography variant="body2" color="text.secondary">
+                              Organization ID
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: 'monospace' }}>
+                            {org.org_id}
                           </Typography>
                         </Box>
                       </Box>
-
-                      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                        <Chip
-                          label={org.verification_status}
-                          size="small"
-                          color={getVerificationColor(org.verification_status) as any}
-                          variant={org.verification_status === 'verified' ? 'filled' : 'outlined'}
-                        />
-                        <Chip
-                          label={orgMembership.role}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                        />
-                      </Box>
-
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        {org.description || 'No description available'}
-                      </Typography>
-
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography variant="body2">Org ID:</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {org.org_id}
-                        </Typography>
-                      </Box>
                     </CardContent>
 
-                    <CardActions>
+                    {/* Actions */}
+                    <Box sx={{ p: 3, pt: 0 }}>
                       <Button
-                        size="small"
-                        onClick={() => handleViewOrganization(org.id)}
                         variant="contained"
                         fullWidth
+                        startIcon={<Settings />}
+                        sx={{
+                          py: 1.5,
+                          fontWeight: 600,
+                          borderRadius: 2
+                        }}
                       >
                         Manage Organization
                       </Button>
-                    </CardActions>
+                    </Box>
                   </Card>
                 </Grid>
               );
             })}
           </Grid>
         ) : (
-          <Card sx={{ textAlign: 'center', py: 6, mb: 4 }}>
+          /* Empty State */
+          <Card sx={{ textAlign: 'center', py: 8, background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
             <CardContent>
-              <Business sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
+              <Business sx={{ fontSize: 80, color: 'text.secondary', mb: 3, opacity: 0.6 }} />
+              <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
                 No Organizations Yet
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Register your research organization to start collaborating with hospitals and accessing medical research data.
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 500, mx: 'auto', lineHeight: 1.6 }}>
+                Get started by registering your research organization to collaborate with hospitals
+                and access medical research data through our privacy-preserving platform.
               </Typography>
               <Button
                 variant="contained"
-                startIcon={<PersonAdd />}
+                size="large"
+                startIcon={<Add />}
                 onClick={handleRegisterOrganization}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+                  '&:hover': {
+                    boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
+                  }
+                }}
               >
-                Register Your Organization
+                Register Your First Organization
               </Button>
             </CardContent>
           </Card>
         )}
       </Box>
 
-      <Divider sx={{ my: 4 }} />
-
-      {/* Hospitals Grid */}
-      <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-        Partner Hospitals
-      </Typography>
-      
-      <Grid container spacing={3}>
-        {hospitals.map((hospital) => (
-          <Grid item xs={12} sm={6} md={4} key={hospital.id}>
-            <Card 
-              sx={{ 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column',
-                transition: 'transform 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: 4,
-                },
-              }}
-            >
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Typography variant="h6" component="h2" gutterBottom>
-                  {hospital.name}
-                </Typography>
-                
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  {hospital.location}
-                </Typography>
-                
-                <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                  <Chip 
-                    label={hospital.type} 
-                    size="small" 
-                    color={hospital.type === 'academic' ? 'primary' : 'default'}
-                  />
-                  <Chip 
-                    label={hospital.size} 
-                    size="small" 
-                    variant="outlined"
-                  />
-                </Box>
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2">Active Studies:</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {hospital.activeStudies || 0}
-                  </Typography>
-                </Box>
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2">Total Patients:</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {hospital.totalPatients?.toLocaleString() || '0'}
-                  </Typography>
-                </Box>
-              </CardContent>
-              
-              <CardActions>
-                <Button 
-                  size="small" 
-                  onClick={() => handleViewHospital(hospital.id)}
-                  variant="contained"
-                  fullWidth
-                >
-                  View Dashboard
-                </Button>
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      {hospitals.length === 0 && !loading && (
-        <Box sx={{ textAlign: 'center', py: 6 }}>
-          <LocalHospital sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-          <Typography variant="h6" color="text.secondary">
-            No hospitals available
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Please check your connection and try again.
-          </Typography>
-        </Box>
+      {/* Quick Actions FAB */}
+      {organizations.length > 0 && (
+        <Tooltip title="Quick Register" placement="left">
+          <Fab
+            color="primary"
+            onClick={handleRegisterOrganization}
+            sx={{
+              position: 'fixed',
+              bottom: 24,
+              right: 24,
+              boxShadow: '0 8px 16px rgba(25, 118, 210, 0.3)',
+              '&:hover': {
+                boxShadow: '0 12px 20px rgba(25, 118, 210, 0.4)',
+              }
+            }}
+          >
+            <Add />
+          </Fab>
+        </Tooltip>
       )}
     </Container>
   );
