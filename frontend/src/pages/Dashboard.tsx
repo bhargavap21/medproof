@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Grid,
@@ -29,21 +29,71 @@ import {
   Biotech,
   AccountBalance,
   VolunteerActivism,
+  Assignment,
+  Gavel,
+  Search,
 } from '@mui/icons-material';
 import { useAPI } from '../hooks/useAPI';
 import { useAuth } from '../hooks/useAuth';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { hospitals, studies, loading, error, loadHospitals, loadDemoStudies } = useAPI();
   const { user, profile, getUserOrganizations } = useAuth();
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [orgLoading, setOrgLoading] = useState(true);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [studyRequests, setStudyRequests] = useState<any[]>([]);
+  const [studyRequestsLoading, setStudyRequestsLoading] = useState(true);
+
+  const loadStudyRequests = async () => {
+    try {
+      setStudyRequestsLoading(true);
+      const response = await fetch('/api/study-requests');
+      if (response.ok) {
+        const data = await response.json();
+        setStudyRequests(data.studyRequests || []);
+      } else {
+        console.error('Failed to fetch study requests:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error loading study requests:', error);
+    } finally {
+      setStudyRequestsLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadHospitals();
     loadDemoStudies();
+    loadStudyRequests();
   }, [loadHospitals, loadDemoStudies]);
+
+  useEffect(() => {
+    // Check for success message from navigation state or sessionStorage
+    if (location.state?.message && location.state?.type === 'success') {
+      setSuccessMessage(location.state.message);
+      // Refresh study requests count when a new study request is created
+      loadStudyRequests();
+      // Clear the navigation state to prevent showing the message again
+      window.history.replaceState({}, document.title);
+      // Auto-hide the message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } else {
+      // Check sessionStorage for success message
+      const storedMessage = sessionStorage.getItem('successMessage');
+      if (storedMessage) {
+        setSuccessMessage(storedMessage);
+        // Refresh study requests count when a new study request is created
+        loadStudyRequests();
+        // Clear the stored message
+        sessionStorage.removeItem('successMessage');
+        // Auto-hide the message after 5 seconds
+        setTimeout(() => setSuccessMessage(null), 5000);
+      }
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const loadUserOrganizations = async () => {
@@ -86,6 +136,18 @@ const Dashboard: React.FC = () => {
 
   const handleGenerateZKProof = () => {
     navigate('/zk-proof-generator');
+  };
+
+  const handleCreateStudyRequest = () => {
+    navigate('/study-request/create');
+  };
+
+  const handleViewStudyRequests = () => {
+    navigate('/study-requests');
+  };
+
+  const handleViewStudyMarketplace = () => {
+    navigate('/study-marketplace');
   };
 
   const getOrganizationIcon = (type: string) => {
@@ -133,6 +195,13 @@ const Dashboard: React.FC = () => {
 
   return (
     <Container maxWidth="xl">
+      {/* Success Message */}
+      {successMessage && (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          {successMessage}
+        </Alert>
+      )}
+
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
@@ -248,7 +317,104 @@ const Dashboard: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Quick Actions */}
+      {/* Study Request Marketplace - Highlighted Section */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+          Study Request Marketplace
+        </Typography>
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} md={8}>
+            <Card sx={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <CardContent sx={{ p: 4 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Assignment sx={{ fontSize: 40, mr: 2 }} />
+                  <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                    Amazon for Medical Research
+                  </Typography>
+                </Box>
+                <Typography variant="h6" sx={{ mb: 2, opacity: 0.9 }}>
+                  Create study requests and get competitive bids from hospitals with ZK proof verification
+                </Typography>
+                <Typography variant="body1" sx={{ mb: 3, opacity: 0.8 }}>
+                  • Automated hospital matching with capacity proofs<br/>
+                  • Transparent competitive bidding<br/>
+                  • Privacy-preserving patient count verification<br/>
+                  • Weeks instead of months to launch studies
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={handleCreateStudyRequest}
+                    startIcon={<Add />}
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      color: 'white',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+                    }}
+                  >
+                    Create Study Request
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={handleViewStudyMarketplace}
+                    startIcon={<Search />}
+                    sx={{
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      color: 'white',
+                      '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' }
+                    }}
+                  >
+                    Browse Marketplace
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Gavel sx={{ mr: 1, color: 'warning.main' }} />
+                  My Study Requests
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Manage your active study requests, review hospital bids, and track progress.
+                </Typography>
+                <Box sx={{ mt: 'auto' }}>
+                  <Typography variant="h3" color="primary.main" sx={{ fontWeight: 600 }}>
+                    {studyRequestsLoading ? '...' : studyRequests.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Active Requests
+                  </Typography>
+                </Box>
+              </CardContent>
+              <CardActions>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={handleViewStudyRequests}
+                  startIcon={<Assignment />}
+                >
+                  Manage Requests
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
+
+      {/* Other Quick Actions */}
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+        Research Tools
+      </Typography>
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={4}>
           <Card>
@@ -262,8 +428,8 @@ const Dashboard: React.FC = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 onClick={handleViewResearch}
                 startIcon={<TrendingUp />}
               >
@@ -285,8 +451,8 @@ const Dashboard: React.FC = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 onClick={() => navigate('/research')}
                 startIcon={<Assessment />}
                 color="secondary"
@@ -309,7 +475,7 @@ const Dashboard: React.FC = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button 
+              <Button
                 variant="contained"
                 onClick={handleGenerateZKProof}
                 startIcon={<VerifiedUser />}
