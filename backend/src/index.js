@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const dotenv = require('dotenv');
+const crypto = require('crypto');
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +23,10 @@ const { supabase } = require('./lib/supabase');
 
 // Import new study routes
 const studiesRouter = require('./routes/studies');
+
+// Import study request services
+const StudyRequestService = require('./services/StudyRequestService');
+const HospitalCapacityService = require('./services/HospitalCapacityService');
 
 // Initialize Express app
 const app = express();
@@ -50,6 +55,10 @@ const studyCommitmentGenerator = new StudyCommitmentGenerator();
 const proofVerifier = new ProofVerifier();
 const applicationService = new ResearcherApplicationService();
 const organizationService = new OrganizationService();
+
+// Initialize study request services
+const studyRequestService = new StudyRequestService();
+const hospitalCapacityService = new HospitalCapacityService();
 const hospitalDataAccessService = new HospitalDataAccessService();
 
 // Health check endpoint
@@ -1222,6 +1231,328 @@ app.get('/api/admin/hospital-stats', (req, res) => {
         data: stats,
         timestamp: new Date().toISOString()
     });
+});
+
+// ==========================================
+// STUDY REQUEST MARKETPLACE API ENDPOINTS
+// ==========================================
+
+// Create new study request
+app.post('/api/study-requests', async (req, res) => {
+    try {
+        const { studyRequestData } = req.body;
+
+        console.log('📝 Creating new study request:', studyRequestData?.title);
+
+        if (!studyRequestData) {
+            return res.status(400).json({
+                success: false,
+                error: 'Study request data is required',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Create study request with validation and commitment generation
+        const result = await studyRequestService.createStudyRequest(studyRequestData);
+
+        if (!result.success) {
+            return res.status(400).json({
+                success: false,
+                error: result.error,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Find eligible hospitals
+        const hospitalMatches = await studyRequestService.findEligibleHospitals(result.studyRequest);
+
+        console.log(`✅ Study request created: ${result.studyRequest.id}`);
+        console.log(`🏥 Found ${hospitalMatches.length} eligible hospitals`);
+
+        res.json({
+            success: true,
+            studyRequest: {
+                id: result.studyRequest.id,
+                title: result.studyRequest.title,
+                status: result.studyRequest.status,
+                commitment: result.commitment.commitment,
+                potentialHospitals: hospitalMatches.length
+            },
+            hospitalMatches: hospitalMatches.slice(0, 5), // Return top 5 matches
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error creating study request:', error.message);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Get study request by ID
+app.get('/api/study-requests/:requestId', async (req, res) => {
+    try {
+        const { requestId } = req.params;
+
+        console.log(`📖 Fetching study request: ${requestId}`);
+
+        const studyRequest = await studyRequestService.getById(requestId);
+
+        if (!studyRequest) {
+            return res.status(404).json({
+                success: false,
+                error: 'Study request not found',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        res.json({
+            success: true,
+            studyRequest,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching study request:', error.message);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Get all study requests
+app.get('/api/study-requests', async (req, res) => {
+    try {
+        console.log('📋 Fetching all study requests');
+
+        const studyRequests = await studyRequestService.getAllStudyRequests();
+
+        res.json({
+            success: true,
+            studyRequests,
+            count: studyRequests.length,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching study requests:', error.message);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Get hospital matches for a study request
+app.get('/api/study-requests/:requestId/matches', async (req, res) => {
+    try {
+        const { requestId } = req.params;
+
+        console.log(`🔍 Finding hospital matches for study request: ${requestId}`);
+
+        // Get study request
+        const studyRequest = await studyRequestService.getById(requestId);
+        if (!studyRequest) {
+            return res.status(404).json({
+                success: false,
+                error: 'Study request not found',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Find eligible hospitals with capacity proofs
+        const hospitalMatches = await studyRequestService.findEligibleHospitals(studyRequest);
+
+        console.log(`✅ Found ${hospitalMatches.length} eligible hospitals`);
+
+        res.json({
+            success: true,
+            studyRequestId: requestId,
+            matches: hospitalMatches,
+            totalMatches: hospitalMatches.length,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error finding hospital matches:', error.message);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Submit hospital bid for study request
+app.post('/api/study-requests/:requestId/bids', async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const { hospitalId, bidAmount, timeline, proposal } = req.body;
+
+        console.log(`💰 Hospital ${hospitalId} submitting bid for study ${requestId}`);
+        console.log(`💵 Bid amount: $${bidAmount}, Timeline: ${timeline} months`);
+
+        if (!hospitalId || !bidAmount || !timeline) {
+            return res.status(400).json({
+                success: false,
+                error: 'Hospital ID, bid amount, and timeline are required',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Get study request for capacity verification
+        const studyRequest = await studyRequestService.getById(requestId);
+        if (!studyRequest) {
+            return res.status(404).json({
+                success: false,
+                error: 'Study request not found',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Generate capacity proof for this specific bid
+        const capacityProof = await hospitalCapacityService.generateCapacityProof(
+            hospitalId,
+            studyRequest
+        );
+
+        if (!capacityProof.isValid || !capacityProof.isEligible) {
+            return res.status(400).json({
+                success: false,
+                error: 'Hospital does not meet capacity requirements for this study',
+                capacityProof,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Calculate match score
+        const hospital = { id: hospitalId, name: `Hospital ${hospitalId}` }; // Mock hospital data
+        const matchScore = await studyRequestService.calculateMatchScore(
+            hospital,
+            studyRequest,
+            capacityProof
+        );
+
+        // Create bid record (mocked for now)
+        const bid = {
+            id: crypto.randomUUID(),
+            studyRequestId: requestId,
+            hospitalId,
+            bidAmount,
+            timeline,
+            proposal: proposal || {},
+            capacityProof,
+            matchScore,
+            status: 'submitted',
+            submittedAt: new Date().toISOString()
+        };
+
+        console.log(`✅ Bid submitted successfully with match score: ${matchScore}%`);
+
+        res.json({
+            success: true,
+            bid: {
+                id: bid.id,
+                status: bid.status,
+                matchScore: bid.matchScore,
+                capacityVerified: true
+            },
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error submitting hospital bid:', error.message);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Validate study request data
+app.post('/api/study-requests/validate', async (req, res) => {
+    try {
+        const { studyRequestData } = req.body;
+
+        console.log('🔍 Validating study request data...');
+
+        if (!studyRequestData) {
+            return res.status(400).json({
+                success: false,
+                error: 'Study request data is required',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        const validation = await studyRequestService.validateStudyRequest(studyRequestData);
+
+        console.log(`✅ Validation complete: ${validation.isValid ? 'VALID' : 'INVALID'}`);
+        if (!validation.isValid) {
+            console.log(`❌ Errors: ${validation.errors.join(', ')}`);
+        }
+
+        res.json({
+            success: true,
+            validation,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error validating study request:', error.message);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Get hospital capacity proof (for testing/debugging)
+app.get('/api/hospitals/:hospitalId/capacity/:conditionCode', async (req, res) => {
+    try {
+        const { hospitalId, conditionCode } = req.params;
+
+        console.log(`🔬 Generating capacity proof for hospital ${hospitalId}, condition ${conditionCode}`);
+
+        // Mock study request for capacity testing
+        const mockStudyRequest = {
+            id: 'test-request',
+            title: 'Test Study',
+            condition_data: { icd10Code: conditionCode, description: 'Test Condition' },
+            requirements: { sampleSize: { min: 50, max: 200, target: 100 } },
+            protocol_data: { inclusionCriteria: ['Age 18-65'] }
+        };
+
+        const capacityProof = await hospitalCapacityService.generateCapacityProof(
+            hospitalId,
+            mockStudyRequest
+        );
+
+        console.log(`✅ Capacity proof generated: ${capacityProof.isValid ? 'VALID' : 'INVALID'}`);
+
+        res.json({
+            success: true,
+            hospitalId,
+            conditionCode,
+            capacityProof,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error generating capacity proof:', error.message);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
 });
 
 // Get canonical study data for commitment generation

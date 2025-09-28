@@ -29,61 +29,58 @@ class StudyCommitmentGenerator {
 
       // Medical condition and treatment
       condition: {
-        code: study.metadata.condition.code,
-        system: study.metadata.condition.system || 'ICD-10',
-        display: study.metadata.condition.display
+        code: study.condition?.code || study.metadata?.condition?.code,
+        system: study.condition?.system || study.metadata?.condition?.system || 'ICD-10',
+        display: study.condition?.description || study.metadata?.condition?.display
       },
 
       // Treatment details
       treatment: {
-        code: study.metadata.treatment.code || study.metadata.treatment.display,
-        display: study.metadata.treatment.display,
-        dosing: study.metadata.treatment.dosing || ''
+        code: study.protocol?.intervention?.type || study.metadata?.treatment?.code || study.metadata?.treatment?.display || 'none',
+        display: study.protocol?.intervention?.description || study.metadata?.treatment?.display || 'None',
+        dosing: study.metadata?.treatment?.dosing || ''
       },
 
-      // Comparator (if exists)
-      comparator: study.metadata.comparator ? {
-        code: study.metadata.comparator.code || study.metadata.comparator.display,
-        display: study.metadata.comparator.display,
-        dosing: study.metadata.comparator.dosing || ''
-      } : null,
+      // Comparator (if exists) - new data structure doesn't have comparator
+      comparator: null,
 
       // Inclusion criteria (critical for study validity)
       inclusionCriteria: {
-        ageMin: study.protocol.inclusionCriteria.ageRange.min,
-        ageMax: study.protocol.inclusionCriteria.ageRange.max,
-        gender: study.protocol.inclusionCriteria.gender,
+        ageMin: study.protocol?.inclusionCriteria?.ageRange?.min || 18,
+        ageMax: study.protocol?.inclusionCriteria?.ageRange?.max || 99,
+        gender: study.protocol?.inclusionCriteria?.gender || 'any',
+        criteria: study.protocol?.inclusionCriteria || [],
         // Add other criteria as ordered keys
-        ...(study.protocol.inclusionCriteria.hba1cRange && {
+        ...(study.protocol?.inclusionCriteria?.hba1cRange && {
           hba1cMin: study.protocol.inclusionCriteria.hba1cRange.min,
           hba1cMax: study.protocol.inclusionCriteria.hba1cRange.max
         }),
-        ...(study.protocol.inclusionCriteria.bmiRange && {
+        ...(study.protocol?.inclusionCriteria?.bmiRange && {
           bmiMin: study.protocol.inclusionCriteria.bmiRange.min,
           bmiMax: study.protocol.inclusionCriteria.bmiRange.max
         }),
-        ...(study.protocol.inclusionCriteria.ejectionFraction && {
+        ...(study.protocol?.inclusionCriteria?.ejectionFraction && {
           ejectionFractionMax: study.protocol.inclusionCriteria.ejectionFraction.max
         })
       },
 
       // Primary endpoint
       primaryEndpoint: {
-        measure: study.protocol.primaryEndpoint?.measure || '',
-        timepoint: study.protocol.primaryEndpoint?.timepoint || ''
+        measure: study.protocol?.primaryEndpoint?.metric || study.protocol?.primaryEndpoint?.measure || '',
+        timepoint: study.protocol?.primaryEndpoint?.timeframe || study.protocol?.primaryEndpoint?.timepoint || ''
       },
 
       // Study design parameters
       studyDesign: {
-        type: study.protocol.studyDesign?.type || study.protocol.designType,
-        duration: study.protocol.studyDesign?.duration || study.protocol.duration,
-        blinding: study.protocol.studyDesign?.blinding || study.protocol.blinding || 'open-label',
-        randomization: study.protocol.studyDesign?.randomization || 'none'
+        type: study.studyType || study.protocol?.studyDesign?.type || study.protocol?.designType || 'observational',
+        duration: study.requirements?.timeline?.duration || study.protocol?.studyDesign?.duration || study.protocol?.duration || 0,
+        blinding: study.protocol?.studyDesign?.blinding || study.protocol?.blinding || 'open-label',
+        randomization: study.protocol?.studyDesign?.randomization || 'none'
       },
 
       // Enrollment information
       enrollment: {
-        targetSize: study.enrollment?.targetSize || study.enrollment?.actualSize || 0,
+        targetSize: study.requirements?.sampleSize?.target || study.enrollment?.targetSize || study.enrollment?.actualSize || 0,
         actualSize: study.enrollment?.actualSize || 0
       },
 
@@ -253,13 +250,13 @@ class StudyCommitmentGenerator {
       studyId: study.studyId,
       commitmentHash: commitment.commitment,
       parameters: {
-        condition: study.metadata.condition.display,
-        treatment: study.metadata.treatment.display,
-        comparator: study.metadata.comparator?.display || 'None',
-        ageRange: `${study.protocol.inclusionCriteria.ageRange.min}-${study.protocol.inclusionCriteria.ageRange.max}`,
-        sampleSize: study.enrollment.actualSize,
-        studyType: study.protocol.studyDesign.type,
-        duration: study.protocol.studyDesign.duration
+        condition: study.condition?.description || study.metadata?.condition?.display,
+        treatment: study.protocol?.intervention?.description || study.metadata?.treatment?.display || 'None',
+        comparator: 'None',
+        ageRange: study.protocol?.inclusionCriteria?.ageRange ? `${study.protocol.inclusionCriteria.ageRange.min}-${study.protocol.inclusionCriteria.ageRange.max}` : '18-99',
+        sampleSize: study.requirements?.sampleSize?.target || study.enrollment?.actualSize || 0,
+        studyType: study.studyType || study.protocol?.studyDesign?.type || 'observational',
+        duration: study.requirements?.timeline?.duration || study.protocol?.studyDesign?.duration || 0
       },
       commitment: commitment.commitment,
       generatedAt: new Date(commitment.timestamp).toISOString()
