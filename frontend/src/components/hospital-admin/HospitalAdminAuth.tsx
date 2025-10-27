@@ -55,13 +55,17 @@ export default function HospitalAdminAuth() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           console.log('🔄 Clearing existing session for hospital admin portal');
+          console.log('🔄 Found existing session for user:', session.user.email);
           await supabase.auth.signOut();
+          console.log('✅ Session cleared successfully');
+          // Force page reload to ensure clean state
+          window.location.reload();
         }
       } catch (err) {
         console.log('⚠️ Error clearing session:', err);
       }
     };
-    
+
     clearExistingSession();
   }, []);
 

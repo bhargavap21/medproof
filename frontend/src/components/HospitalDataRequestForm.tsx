@@ -209,7 +209,7 @@ const HospitalDataRequestForm: React.FC = () => {
           requesterId: user.id
         };
 
-        const response = await axios.post('http://localhost:3001/api/data-access-requests', requestPayload, {
+        const response = await axios.post('http://localhost:8000/api/data-access-requests', requestPayload, {
           timeout: 5000 // 5 second timeout
         });
 
