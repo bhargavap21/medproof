@@ -229,57 +229,120 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return [];
       }
       
-      // If no organizations found, return demo organizations for hackathon demo
+      // If no organizations found, try to create demo organizations for hackathon
       if (!data || data.length === 0) {
-        return [
-          {
-            organization_id: 'demo-stanford',
-            role: 'admin',
-            permissions: ['manage_organization', 'invite_members', 'submit_studies'],
-            research_organizations: {
-              id: 'demo-stanford',
-              name: 'Stanford Medical AI Research Lab',
-              org_id: 'STANFORD_AI_001',
-              organization_type: 'university',
-              verification_status: 'verified',
-              description: 'Leading research in AI-driven medical diagnostics and privacy-preserving analytics'
-            }
-          },
-          {
-            organization_id: 'demo-broad',
-            role: 'researcher',
-            permissions: ['submit_studies', 'view_data'],
-            research_organizations: {
-              id: 'demo-broad',
-              name: 'Broad Institute Genomics Consortium',
-              org_id: 'BROAD_GENOMICS_001',
-              organization_type: 'research_institute',
-              verification_status: 'verified',
-              description: 'Pioneering genomic research for precision medicine and therapeutic development'
+        console.log('📝 No organizations found, creating demo organizations...');
+
+        // Try to create real demo organizations with proper UUIDs
+        try {
+          // Check if demo organizations already exist
+          const { data: existingOrgs } = await supabase
+            .from('research_organizations')
+            .select('id, name, org_id')
+            .in('org_id', ['STANFORD_AI_001', 'BROAD_GENOMICS_001']);
+
+          let stanfordOrg = existingOrgs?.find(org => org.org_id === 'STANFORD_AI_001');
+          let broadOrg = existingOrgs?.find(org => org.org_id === 'BROAD_GENOMICS_001');
+
+          // Create Stanford org if it doesn't exist
+          if (!stanfordOrg) {
+            const { data: newStanford, error: stanfordError } = await supabase
+              .from('research_organizations')
+              .insert({
+                name: 'Stanford Medical AI Research Lab',
+                org_id: 'STANFORD_AI_001',
+                organization_type: 'university',
+                verification_status: 'verified',
+                description: 'Leading research in AI-driven medical diagnostics and privacy-preserving analytics'
+              })
+              .select()
+              .single();
+
+            if (!stanfordError && newStanford) {
+              stanfordOrg = newStanford;
+
+              // Create membership for current user
+              await supabase
+                .from('organization_memberships')
+                .insert({
+                  organization_id: newStanford.id,
+                  user_id: user.id,
+                  role: 'admin',
+                  permissions: ['manage_organization', 'invite_members', 'submit_studies'],
+                  is_active: true
+                });
             }
           }
-        ];
+
+          // Create Broad org if it doesn't exist
+          if (!broadOrg) {
+            const { data: newBroad, error: broadError } = await supabase
+              .from('research_organizations')
+              .insert({
+                name: 'Broad Institute Genomics Consortium',
+                org_id: 'BROAD_GENOMICS_001',
+                organization_type: 'research_institute',
+                verification_status: 'verified',
+                description: 'Pioneering genomic research for precision medicine and therapeutic development'
+              })
+              .select()
+              .single();
+
+            if (!broadError && newBroad) {
+              broadOrg = newBroad;
+
+              // Create membership for current user
+              await supabase
+                .from('organization_memberships')
+                .insert({
+                  organization_id: newBroad.id,
+                  user_id: user.id,
+                  role: 'researcher',
+                  permissions: ['submit_studies', 'view_data'],
+                  is_active: true
+                });
+            }
+          }
+
+          // Return the created/found organizations
+          if (stanfordOrg || broadOrg) {
+            const demoOrgs = [];
+
+            if (stanfordOrg) {
+              demoOrgs.push({
+                organization_id: stanfordOrg.id,
+                role: 'admin',
+                permissions: ['manage_organization', 'invite_members', 'submit_studies'],
+                research_organizations: stanfordOrg
+              });
+            }
+
+            if (broadOrg) {
+              demoOrgs.push({
+                organization_id: broadOrg.id,
+                role: 'researcher',
+                permissions: ['submit_studies', 'view_data'],
+                research_organizations: broadOrg
+              });
+            }
+
+            console.log('✅ Demo organizations ready:', demoOrgs);
+            return demoOrgs;
+          }
+        } catch (orgError) {
+          console.error('Error creating demo organizations:', orgError);
+        }
+
+        // Fallback: Return empty array (will skip database operations)
+        console.log('⚠️ Could not create organizations, returning empty array');
+        return [];
       }
       
       return data || [];
     } catch (error) {
       console.error('Exception fetching organizations:', error);
-      // Return demo organizations on error for hackathon demo
-      return [
-        {
-          organization_id: 'demo-stanford',
-          role: 'admin',
-          permissions: ['manage_organization', 'invite_members', 'submit_studies'],
-          research_organizations: {
-            id: 'demo-stanford',
-            name: 'Stanford Medical AI Research Lab',
-            org_id: 'STANFORD_AI_001',
-            organization_type: 'university',
-            verification_status: 'verified',
-            description: 'Leading research in AI-driven medical diagnostics and privacy-preserving analytics'
-          }
-        }
-      ];
+      // Return empty array on error (will skip database operations)
+      return [];
     }
   };
 
