@@ -221,37 +221,6 @@ const Dashboard: React.FC = () => {
           Privacy-preserving medical research collaboration platform
         </Typography>
 
-        {/* Midnight Network Showcase */}
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2,
-          p: 3,
-          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-          color: 'white',
-          borderRadius: 3,
-          border: '1px solid rgba(255,255,255,0.1)',
-          mb: 2,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
-        }}>
-          <Box sx={{ fontSize: 40 }}>🌙</Box>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-              Built on Midnight Network
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              Enabling secure, privacy-preserving medical research through zero-knowledge proofs and programmable privacy
-            </Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center', minWidth: 100 }}>
-            <Typography variant="caption" sx={{ opacity: 0.7 }}>
-              ZK-SNARKS
-            </Typography>
-            <Typography variant="h6" sx={{ color: '#4caf50', fontWeight: 600 }}>
-              VERIFIED
-            </Typography>
-          </Box>
-        </Box>
 
         {/* Welcome User Section */}
         {user && (
@@ -406,23 +375,18 @@ const Dashboard: React.FC = () => {
         </Typography>
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} md={8}>
-            <Card sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
+            <Card>
               <CardContent sx={{ p: 4 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Assignment sx={{ fontSize: 40, mr: 2 }} />
+                  <Assignment sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
                   <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                    Amazon for Medical Research
+                    Study Request Platform
                   </Typography>
                 </Box>
-                <Typography variant="h6" sx={{ mb: 2, opacity: 0.9 }}>
+                <Typography variant="h6" sx={{ mb: 2, color: 'text.secondary' }}>
                   Create study requests and get competitive bids from hospitals with ZK proof verification
                 </Typography>
-                <Typography variant="body1" sx={{ mb: 3, opacity: 0.8 }}>
+                <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary' }}>
                   • Automated hospital matching with capacity proofs<br/>
                   • Transparent competitive bidding<br/>
                   • Privacy-preserving patient count verification<br/>
@@ -434,26 +398,8 @@ const Dashboard: React.FC = () => {
                     size="large"
                     onClick={handleCreateStudyRequest}
                     startIcon={<Add />}
-                    sx={{
-                      bgcolor: 'rgba(255,255,255,0.2)',
-                      color: 'white',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
-                    }}
                   >
                     Create Study Request
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    onClick={handleViewStudyMarketplace}
-                    startIcon={<Search />}
-                    sx={{
-                      borderColor: 'rgba(255,255,255,0.5)',
-                      color: 'white',
-                      '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' }
-                    }}
-                  >
-                    Browse Marketplace
                   </Button>
                 </Box>
               </CardContent>

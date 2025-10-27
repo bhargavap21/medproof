@@ -103,7 +103,7 @@ const StudySelector: React.FC<StudySelectorProps> = ({ onStudySelect, selectedSt
       setError(null);
 
       console.log('📚 Fetching available studies...');
-      const response = await axios.get('http://localhost:3003/api/available-studies');
+      const response = await axios.get('http://localhost:8000/api/available-studies');
 
       if (response.data.success) {
         setAvailableStudies(response.data.studies);

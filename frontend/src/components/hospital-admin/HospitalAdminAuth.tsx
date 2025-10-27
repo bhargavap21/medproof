@@ -220,7 +220,7 @@ export default function HospitalAdminAuth() {
         email: signupData.email,
         password: signupData.password,
         options: {
-          emailRedirectTo: 'http://localhost:3000/hospital-admin/login',
+          // Let Supabase use default email confirmation flow (no custom redirect)
           data: {
             firstName: signupData.firstName,
             lastName: signupData.lastName,
@@ -253,83 +253,36 @@ export default function HospitalAdminAuth() {
       if (authData.user) {
         console.log('✅ User created successfully:', authData.user);
         console.log('📧 Email confirmation required:', !authData.session && !authData.user.email_confirmed_at);
-        
+
         // Check if this is a case where the user already exists
         if (authData.user.email_confirmed_at) {
           console.log('⚠️ User already exists and is confirmed');
           setError('This email is already registered. Please use the Sign In tab to log in.');
           return;
         }
-        
-        // TEMPORARY FIX: Create a basic hospital_admins record immediately for testing
-        try {
-          console.log('🏥 Creating temporary hospital_admins record for testing...');
-          
-          // Wait a bit for user to be persisted in auth.users table
-          console.log('⏳ Waiting for user to be persisted in auth.users...');
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-          
-          // Create a temporary hospital first
-          const { data: hospitalData, error: hospitalError } = await supabase
-            .from('hospitals')
-            .insert({
-              hospital_id: `temp_${Date.now()}`,
-              name: signupData.hospitalName || 'Temporary Hospital',
-              institution_type: 'hospital',
-              contact_email: signupData.email,
-              settings: {
-                max_studies_per_org: 50,
-                data_retention_months: 24,
-                auto_approve_known_orgs: false,
-                allowed_organization_types: ["university", "research_institute"]
-              }
-            })
-            .select()
-            .single();
 
-          if (hospitalError) {
-            console.error('❌ Error creating hospital:', hospitalError);
-          } else if (hospitalData) {
-            console.log('✅ Temporary hospital created:', hospitalData);
-            
-            // Skip user verification for now since we can't query auth.users directly
-            console.log('🔍 Proceeding to create admin record...');
-            
-            // Now create hospital_admins record
-            const { data: adminData, error: adminError } = await supabase
-              .from('hospital_admins')
-              .insert({
-                hospital_id: hospitalData.id,
-                user_id: authData.user.id,
-                role: 'super_admin',
-                permissions: {
-                  manage_data_requests: true,
-                  approve_requests: true,
-                  manage_policies: true
-                },
-                is_active: true
-              })
-              .select()
-              .single();
+        // Check if email confirmation is required
+        const emailConfirmationRequired = !authData.session && !authData.user.email_confirmed_at;
 
-            if (adminError) {
-              console.error('❌ Error creating hospital admin record:', adminError);
-              console.log('🔄 Will retry admin record creation during login instead');
-            } else {
-              console.log('✅ Hospital admin record created:', adminData);
-            }
-          }
-        } catch (tempError) {
-          console.error('❌ Error in temporary setup:', tempError);
+        if (emailConfirmationRequired) {
+          // Show email confirmation message
+          console.log('✅ Account created - email confirmation required');
+          setSuccess(
+            `Account created successfully! We've sent a verification email to ${signupData.email}. ` +
+            'Please check your inbox and click the confirmation link to activate your hospital administrator account. ' +
+            'Once confirmed, you can sign in using the Sign In tab.'
+          );
+        } else {
+          // Email confirmation not required (immediate login)
+          console.log('✅ Account created - no email confirmation required');
+          setSuccess(
+            'Account created successfully! You can now sign in using the Sign In tab.'
+          );
         }
-        
-        // Show success message and allow immediate login for testing
-        console.log('✅ Setting success message - account ready for testing');
-        setSuccess(
-          'Account created successfully! For testing purposes, you can now sign in immediately using the Sign In tab. ' +
-          '(Email confirmation is temporarily disabled for development.)'
-        );
-        
+
+        // Hospital and admin records will be created during first login (in handleLogin function)
+        // This ensures records are only created after email is confirmed
+
         // Clear form
         setSignupData({
           email: '',

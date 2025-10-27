@@ -385,7 +385,7 @@ const ZKProofGenerator: React.FC = () => {
 
       // Fetch canonical study data from backend to ensure commitment hash matches
       console.log('📚 Fetching canonical study data for commitment generation...');
-      const canonicalResponse = await axios.get(`http://localhost:3003/api/studies/${selectedStudy.studyId}/canonical`);
+      const canonicalResponse = await axios.get(`http://localhost:8000/api/studies/${selectedStudy.studyId}/canonical`);
       const canonicalStudy = canonicalResponse.data.study;
       console.log('✅ Got canonical study data:', canonicalStudy.studyId);
 
@@ -408,7 +408,7 @@ const ZKProofGenerator: React.FC = () => {
       });
 
       // Call backend API to generate REAL Midnight Network ZK proof
-      const response = await axios.post('http://localhost:3003/api/generate-proof', {
+      const response = await axios.post('http://localhost:8000/api/generate-proof', {
         studyData: {
           studyId: selectedStudy.studyId, // Use actual study ID instead of constructed one
           condition: proofRequest.parameters.condition || mockHospitalData.condition,
@@ -502,7 +502,7 @@ const ZKProofGenerator: React.FC = () => {
       console.log('Research Insights:', generatedProof.researchInsights);
 
       // Submit to actual Midnight Network blockchain
-      const response = await axios.post('http://localhost:3003/api/submit-to-blockchain', {
+      const response = await axios.post('http://localhost:8000/api/submit-to-blockchain', {
         proofHash: generatedProof.proofHash,
         studyMetadata: {
           studyTitle: proofRequest.studyTitle,
