@@ -253,7 +253,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 org_id: 'STANFORD_AI_001',
                 organization_type: 'university',
                 verification_status: 'verified',
-                description: 'Leading research in AI-driven medical diagnostics and privacy-preserving analytics'
+                description: 'Leading research in AI-driven medical diagnostics and privacy-preserving analytics',
+                contact_email: 'contact@stanford-ai.edu'
               })
               .select()
               .single();
@@ -283,7 +284,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 org_id: 'BROAD_GENOMICS_001',
                 organization_type: 'research_institute',
                 verification_status: 'verified',
-                description: 'Pioneering genomic research for precision medicine and therapeutic development'
+                description: 'Pioneering genomic research for precision medicine and therapeutic development',
+                contact_email: 'contact@broadinstitute.org'
               })
               .select()
               .single();
