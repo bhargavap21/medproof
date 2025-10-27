@@ -130,20 +130,54 @@ export default function HospitalAdminAuth() {
         if (!adminData) {
           console.log('❌ No hospital admin record found for user:', authData.user.id);
           console.log('🔄 Attempting to create missing hospital admin record...');
-          
+
           // Try to find a hospital associated with this user's email
-          const { data: hospitalData, error: hospitalFindError } = await supabase
+          let { data: hospitalData, error: hospitalFindError } = await supabase
             .from('hospitals')
             .select('*')
             .eq('contact_email', authData.user.email)
             .single();
-          
+
+          // If no hospital exists, create one from user metadata
           if (hospitalFindError || !hospitalData) {
             console.log('❌ No hospital found for email:', authData.user.email);
-            throw new Error('Access denied: You are not registered as a hospital administrator. Please complete the registration process first.');
+            console.log('🔄 Creating hospital from user signup data...');
+
+            // Get hospital name from user metadata (stored during signup)
+            const userMetadata = authData.user.user_metadata || {};
+            const hospitalName = userMetadata.hospitalName || 'New Hospital';
+
+            console.log('📋 User metadata:', userMetadata);
+            console.log('🏥 Creating hospital:', hospitalName);
+
+            // Create the hospital record
+            const { data: newHospitalData, error: createHospitalError } = await supabase
+              .from('hospitals')
+              .insert({
+                hospital_id: `hosp_${Date.now()}`,
+                name: hospitalName,
+                institution_type: 'hospital',
+                contact_email: authData.user.email,
+                settings: {
+                  max_studies_per_org: 50,
+                  data_retention_months: 24,
+                  auto_approve_known_orgs: false,
+                  allowed_organization_types: ["university", "research_institute"]
+                }
+              })
+              .select()
+              .single();
+
+            if (createHospitalError) {
+              console.error('❌ Failed to create hospital:', createHospitalError);
+              throw new Error('Access denied: Unable to create hospital record. Please contact support.');
+            }
+
+            console.log('✅ Hospital created successfully:', newHospitalData);
+            hospitalData = newHospitalData;
           }
-          
-          // Create the missing hospital_admins record
+
+          // Now create hospital_admins record
           const { data: newAdminData, error: createAdminError } = await supabase
             .from('hospital_admins')
             .insert({
@@ -166,12 +200,12 @@ export default function HospitalAdminAuth() {
               )
             `)
             .single();
-          
+
           if (createAdminError) {
             console.error('❌ Failed to create hospital admin record:', createAdminError);
             throw new Error('Access denied: Unable to create hospital administrator record. Please contact support.');
           }
-          
+
           console.log('✅ Hospital admin record created successfully:', newAdminData);
           adminData = newAdminData;
         }
