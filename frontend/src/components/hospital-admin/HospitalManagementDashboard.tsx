@@ -116,7 +116,7 @@ export default function HospitalManagementDashboard() {
         .from('hospital_data_access_requests')
         .select(`
           *,
-          organizations (
+          research_organizations (
             name
           )
         `)
@@ -128,7 +128,7 @@ export default function HospitalManagementDashboard() {
       // Transform the data
       const transformedRequests = requestsData?.map(req => ({
         ...req,
-        organization_name: req.organizations?.name || 'Unknown Organization'
+        organization_name: req.research_organizations?.name || 'Unknown Organization'
       })) || [];
 
       setRequests(transformedRequests);
