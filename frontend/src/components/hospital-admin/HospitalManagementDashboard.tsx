@@ -58,6 +58,17 @@ interface DataAccessRequest {
   created_at: string;
   research_title?: string;
   organization_id: string;
+  research_description?: string;
+  research_methodology?: string;
+  expected_outcomes?: string;
+  publication_plans?: string;
+  data_retention_period?: string;
+  data_security_plan?: string;
+  irb_approval_number?: string;
+  irb_approval_date?: string;
+  ethics_committee?: string;
+  hipaa_compliance_confirmed?: boolean;
+  gdpr_compliance_confirmed?: boolean;
 }
 
 interface HospitalStats {
@@ -139,21 +150,19 @@ export default function HospitalManagementDashboard() {
       const approvedRequests = transformedRequests.filter(r => r.status === 'approved').length;
       const rejectedRequests = transformedRequests.filter(r => r.status === 'rejected').length;
 
-      // Get active partnerships (approved agreements)
-      const { data: agreementsData, error: agreementsError } = await supabase
-        .from('data_sharing_agreements')
-        .select('id')
-        .eq('hospital_id', hospitalId)
-        .eq('status', 'approved');
-
-      if (agreementsError) throw agreementsError;
+      // Count active partnerships from unique approved requests
+      const uniqueOrganizations = new Set(
+        transformedRequests
+          .filter(r => r.status === 'approved')
+          .map(r => r.organization_id)
+      );
 
       setStats({
         totalRequests,
         pendingRequests,
         approvedRequests,
         rejectedRequests,
-        activePartnerships: agreementsData?.length || 0
+        activePartnerships: uniqueOrganizations.size
       });
 
     } catch (err: any) {
@@ -165,44 +174,71 @@ export default function HospitalManagementDashboard() {
 
   const handleRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
     try {
-      const { error } = await supabase
-        .from('hospital_data_access_requests')
-        .update({ 
-          status: action === 'approve' ? 'approved' : 'rejected',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', requestId);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-      if (error) throw error;
-
-      // If approved, create data sharing agreement
-      if (action === 'approve' && selectedRequest) {
-        const agreementData = {
-          hospital_id: hospitalAdmin?.hospital_id,
-          organization_id: selectedRequest.organization_id,
-          agreement_type: 'data_access',
-          data_scope: selectedRequest.requested_permissions,
-          permissions: selectedRequest.requested_permissions,
-          status: 'approved',
-          effective_date: new Date().toISOString(),
-          expiration_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
-          data_retention_months: 12
+      if (action === 'approve') {
+        // Call backend API to approve request
+        const approvalData = {
+          reviewerId: user.id,
+          approvalData: {
+            reason: 'Approved by hospital admin',
+            approvedPermissions: selectedRequest?.requested_permissions || [],
+            dataScope: selectedRequest?.requested_permissions || [],
+            maxStudiesPerYear: 10,
+            conditions: [],
+            monitoringRequirements: [],
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year
+            renewable: true
+          }
         };
 
-        const { error: agreementError } = await supabase
-          .from('data_sharing_agreements')
-          .insert(agreementData);
+        const response = await fetch(`http://localhost:8000/api/data-access-requests/${requestId}/approve`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(approvalData)
+        });
 
-        if (agreementError) throw agreementError;
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to approve request');
+        }
+
+        console.log('✅ Request approved successfully');
+      } else {
+        // Call backend API to reject request
+        const rejectionData = {
+          reviewerId: user.id,
+          reason: 'Rejected by hospital admin - does not meet current data sharing criteria'
+        };
+
+        const response = await fetch(`http://localhost:8000/api/data-access-requests/${requestId}/reject`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(rejectionData)
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to reject request');
+        }
+
+        console.log('❌ Request rejected successfully');
       }
 
       // Reload data
       if (hospitalAdmin?.hospital_id) {
         loadDashboardData(hospitalAdmin.hospital_id);
       }
-      
+
       setSelectedRequest(null);
     } catch (err: any) {
+      console.error('Error handling request action:', err);
       setError(err.message || 'Failed to update request');
     }
   };
@@ -282,10 +318,6 @@ export default function HospitalManagementDashboard() {
             open={Boolean(anchorEl)}
             onClose={handleMenuClose}
           >
-            <MenuItem onClick={() => navigate('/hospital-admin/settings')}>
-              <SettingsIcon sx={{ mr: 1 }} />
-              Settings
-            </MenuItem>
             <MenuItem onClick={handleLogout}>
               <ExitToApp sx={{ mr: 1 }} />
               Logout
@@ -413,26 +445,26 @@ export default function HospitalManagementDashboard() {
                 Quick Actions
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   startIcon={<Policy />}
-                  onClick={() => navigate('/hospital-admin/data-policies')}
+                  disabled
                 >
                   Manage Data Policies
                 </Button>
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   startIcon={<PeopleIcon />}
-                  onClick={() => navigate('/hospital-admin/partnerships')}
+                  onClick={() => navigate('/hospital-admin/study-marketplace')}
                 >
-                  View Partnerships
+                  Browse Studies
                 </Button>
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   startIcon={<SettingsIcon />}
-                  onClick={() => navigate('/hospital-admin/settings')}
+                  onClick={() => navigate('/hospital-admin/profile')}
                 >
-                  Hospital Settings
+                  Hospital Profile
                 </Button>
               </Box>
             </Paper>
@@ -471,10 +503,16 @@ export default function HospitalManagementDashboard() {
         <DialogTitle>
           Data Access Request Details
         </DialogTitle>
-        <DialogContent>
+        <DialogContent dividers sx={{ maxHeight: '70vh' }}>
           {selectedRequest && (
             <Box sx={{ mt: 1 }}>
-              <Grid container spacing={2}>
+              <Grid container spacing={3}>
+                {/* Basic Information */}
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', borderBottom: 1, borderColor: 'divider', pb: 1 }}>
+                    Basic Information
+                  </Typography>
+                </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="textSecondary">
                     Organization
@@ -491,12 +529,75 @@ export default function HospitalManagementDashboard() {
                     {selectedRequest.request_type}
                   </Typography>
                 </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    Status
+                  </Typography>
+                  <Chip
+                    label={selectedRequest.status}
+                    color={getStatusColor(selectedRequest.status) as any}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    Request Date
+                  </Typography>
+                  <Typography variant="body1">
+                    {format(new Date(selectedRequest.created_at), 'MMM dd, yyyy HH:mm')}
+                  </Typography>
+                </Grid>
+
+                {/* Research Details */}
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', borderBottom: 1, borderColor: 'divider', pb: 1, mt: 2 }}>
+                    Research Details
+                  </Typography>
+                </Grid>
                 <Grid item xs={12}>
                   <Typography variant="subtitle2" color="textSecondary">
                     Research Title
                   </Typography>
                   <Typography variant="body1" gutterBottom>
                     {selectedRequest.research_title || 'Not specified'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    Research Description
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {selectedRequest.research_description || 'Not specified'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    Research Methodology
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {selectedRequest.research_methodology || 'Not specified'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    Expected Outcomes
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {selectedRequest.expected_outcomes || 'Not specified'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    Publication Plans
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {selectedRequest.publication_plans || 'Not specified'}
+                  </Typography>
+                </Grid>
+
+                {/* Data Access & Security */}
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', borderBottom: 1, borderColor: 'divider', pb: 1, mt: 2 }}>
+                    Data Access & Security
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
@@ -512,27 +613,77 @@ export default function HospitalManagementDashboard() {
                     Requested Permissions
                   </Typography>
                   <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {selectedRequest.requested_permissions.map((permission, index) => (
-                      <Chip key={index} label={permission} size="small" />
+                    {selectedRequest.requested_permissions?.map((permission: string, index: number) => (
+                      <Chip key={index} label={permission} size="small" color="primary" variant="outlined" />
                     ))}
                   </Box>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="textSecondary">
-                    Status
+                    Data Retention Period
                   </Typography>
-                  <Chip 
-                    label={selectedRequest.status}
-                    color={getStatusColor(selectedRequest.status) as any}
+                  <Typography variant="body1" gutterBottom>
+                    {selectedRequest.data_retention_period || 'Not specified'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    Data Security Plan
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {selectedRequest.data_security_plan || 'Not specified'}
+                  </Typography>
+                </Grid>
+
+                {/* Ethics & Compliance */}
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', borderBottom: 1, borderColor: 'divider', pb: 1, mt: 2 }}>
+                    Ethics & Compliance
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    IRB Approval Number
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {selectedRequest.irb_approval_number || 'Not specified'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    IRB Approval Date
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {selectedRequest.irb_approval_date ? format(new Date(selectedRequest.irb_approval_date), 'MMM dd, yyyy') : 'Not specified'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    Ethics Committee
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {selectedRequest.ethics_committee || 'Not specified'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    HIPAA Compliance
+                  </Typography>
+                  <Chip
+                    label={selectedRequest.hipaa_compliance_confirmed ? 'Confirmed' : 'Not Confirmed'}
+                    color={selectedRequest.hipaa_compliance_confirmed ? 'success' : 'default'}
+                    size="small"
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="textSecondary">
-                    Request Date
+                    GDPR Compliance
                   </Typography>
-                  <Typography variant="body1">
-                    {format(new Date(selectedRequest.created_at), 'MMM dd, yyyy HH:mm')}
-                  </Typography>
+                  <Chip
+                    label={selectedRequest.gdpr_compliance_confirmed ? 'Confirmed' : 'Not Confirmed'}
+                    color={selectedRequest.gdpr_compliance_confirmed ? 'success' : 'default'}
+                    size="small"
+                  />
                 </Grid>
               </Grid>
             </Box>
