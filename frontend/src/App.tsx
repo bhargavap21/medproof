@@ -21,6 +21,8 @@ import StudyRequestsList from './components/study-request/StudyRequestsList';
 import HospitalAdminAuth from './components/hospital-admin/HospitalAdminAuth';
 import HospitalRegistrationWizard from './components/hospital-admin/HospitalRegistrationWizard';
 import HospitalManagementDashboard from './components/hospital-admin/HospitalManagementDashboard';
+import HospitalProfilePage from './components/hospital-admin/HospitalProfilePage';
+import StudyMarketplace from './components/hospital-admin/StudyMarketplace';
 import HospitalNetwork from './pages/HospitalNetwork';
 import AuthWrapper from './components/auth/AuthWrapper';
 import { APIProvider } from './hooks/useAPI';
@@ -61,6 +63,8 @@ function App() {
             <Route path="/hospital-admin/login" element={<HospitalAdminAuth />} />
             <Route path="/hospital-admin/register" element={<HospitalRegistrationWizard />} />
             <Route path="/hospital-admin/dashboard" element={<HospitalManagementDashboard />} />
+            <Route path="/hospital-admin/profile" element={<HospitalProfilePage />} />
+            <Route path="/hospital-admin/study-marketplace" element={<StudyMarketplace />} />
 
             {/* All Main App Routes with Sidebar */}
             <Route path="/*" element={
