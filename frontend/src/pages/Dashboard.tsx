@@ -185,7 +185,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const getOrganizationTypeLabel = (type: string) => {
+  const getOrganizationTypeLabel = (type: string | undefined | null) => {
     if (!type) return 'Unknown';
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
@@ -225,7 +225,7 @@ const Dashboard: React.FC = () => {
 
         {/* Welcome User Section */}
         {user && (
-          <Card sx={{ maxWidth: 500, mx: 'auto', mb: 4, background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white' }}>
+          <Card sx={{ maxWidth: 500, mx: 'auto', mb: 4, background: 'linear-gradient(135deg, #1c2128 0%, #252d38 100%)', color: '#f0f6fc', border: '1px solid #30363d' }}>
             <CardContent sx={{ py: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
                 <Avatar sx={{ width: 50, height: 50, bgcolor: 'rgba(255,255,255,0.2)' }}>
@@ -589,7 +589,7 @@ const Dashboard: React.FC = () => {
                       {/* Status Badges */}
                       <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
                         <Chip
-                          label={(org.verification_status || 'unknown').toUpperCase()}
+                          label={(org.verification_status || 'unverified').toUpperCase()}
                           size="small"
                           sx={{
                             bgcolor: getVerificationColor(org.verification_status) + '20',
@@ -661,7 +661,7 @@ const Dashboard: React.FC = () => {
             })}
           </Grid>
         ) : (
-          <Card sx={{ textAlign: 'center', py: 8, background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
+          <Card sx={{ textAlign: 'center', py: 8, background: 'linear-gradient(135deg, #1c2128 0%, #252d38 100%)', border: '1px solid #30363d' }}>
             <CardContent>
               <Business sx={{ fontSize: 80, color: 'text.secondary', mb: 3, opacity: 0.6 }} />
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>

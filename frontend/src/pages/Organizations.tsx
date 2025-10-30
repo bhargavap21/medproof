@@ -111,7 +111,8 @@ const Organizations: React.FC = () => {
     return colors[status as keyof typeof colors] || '#9e9e9e';
   };
 
-  const getOrganizationTypeLabel = (type: string) => {
+  const getOrganizationTypeLabel = (type: string | undefined | null) => {
+    if (!type) return 'Unknown';
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 

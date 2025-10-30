@@ -306,7 +306,7 @@ const LandingPage: React.FC = () => {
 
             <Button
               variant="outlined"
-              onClick={() => navigate('/app')}
+              onClick={() => navigate('/dashboard')}
               sx={{
                 display: { xs: 'none', md: 'flex' },
                 alignItems: 'center',
@@ -477,7 +477,7 @@ const LandingPage: React.FC = () => {
                 variant="contained"
                 size="large"
                 endIcon={<ArrowForward />}
-                onClick={() => navigate('/app/research')}
+                onClick={() => navigate('/dashboard')}
                 sx={{
                 background: '#58a6ff',
                   color: '#ffffff',
@@ -860,7 +860,7 @@ const LandingPage: React.FC = () => {
                 variant="outlined"
                 size="large"
                 endIcon={<ArrowForward />}
-                onClick={() => navigate('/app/research')}
+                onClick={() => navigate('/research')}
                 sx={{
                   borderColor: '#58a6ff',
                   color: '#58a6ff',
@@ -981,7 +981,7 @@ const LandingPage: React.FC = () => {
               </Typography>
 
                 <Button
-                  onClick={() => navigate('/app/organization/register')}
+                  onClick={() => navigate('/organization/register')}
                   sx={{
               position: 'relative',
               display: 'inline-flex',

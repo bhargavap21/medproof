@@ -238,12 +238,12 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
             borderRadius: 2,
             cursor: 'pointer',
             pl: 2 + level * 2,
-            background: active ? 'rgba(25, 118, 210, 0.1)' : 'transparent',
-            border: active ? '1px solid rgba(25, 118, 210, 0.3)' : '1px solid transparent',
+            background: active ? 'rgba(88, 166, 255, 0.15)' : 'transparent',
+            border: active ? '1px solid rgba(88, 166, 255, 0.3)' : '1px solid transparent',
             transition: 'all 0.2s ease',
             '&:hover': {
-              background: 'rgba(25, 118, 210, 0.08)',
-              border: '1px solid rgba(25, 118, 210, 0.2)',
+              background: 'rgba(88, 166, 255, 0.1)',
+              border: '1px solid rgba(88, 166, 255, 0.2)',
               transform: open ? 'translateX(4px)' : 'none',
             },
           }}
@@ -312,10 +312,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
         '& .MuiDrawer-paper': {
           width: open ? SIDEBAR_WIDTH : COLLAPSED_WIDTH,
           boxSizing: 'border-box',
-          background: '#fafafa',
+          background: '#161b22',
           border: 'none',
-          borderRight: '1px solid #e0e0e0',
-          boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
+          borderRight: '1px solid #30363d',
+          boxShadow: 'none',
           transition: 'all 0.3s ease',
           overflow: 'visible',
         },
@@ -333,7 +333,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           display: 'flex',
           alignItems: 'center',
           minHeight: 72,
-          borderBottom: '1px solid #e0e0e0',
+          borderBottom: '1px solid #30363d',
         }}>
           {open ? (
             <Box 
@@ -475,8 +475,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
         {/* Status & Actions */}
         <Box sx={{
           p: open ? 2 : 1,
-          borderTop: '1px solid #e0e0e0',
-          background: 'rgba(0, 0, 0, 0.02)',
+          borderTop: '1px solid #30363d',
+          background: 'rgba(255, 255, 255, 0.05)',
         }}>
           {/* Network Status */}
           <Box sx={{

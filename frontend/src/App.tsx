@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Box, Container } from '@mui/material';
 import Navigation from './components/Navigation';
 import SidebarLayout from './components/SidebarLayout';
+import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import HospitalDashboard from './pages/HospitalDashboard';
 import ResearchAggregator from './pages/ResearchAggregator';
@@ -59,6 +60,9 @@ function App() {
       <Web3Provider>
         <APIProvider>
           <Routes>
+            {/* Landing Page - No Auth Required */}
+            <Route path="/" element={<LandingPage />} />
+
             {/* Hospital Admin Routes - Completely Separate Portal (No Sidebar) */}
             <Route path="/hospital-admin/login" element={<HospitalAdminAuth />} />
             <Route path="/hospital-admin/register" element={<HospitalRegistrationWizard />} />
@@ -69,7 +73,7 @@ function App() {
               <AuthWrapper>
                 <SidebarLayout>
                   <Routes>
-                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/hospital/:hospitalId" element={<HospitalDashboard />} />
                     <Route path="/research" element={<ResearchAggregator />} />
                     <Route path="/study/:studyId" element={<StudyDetails />} />
