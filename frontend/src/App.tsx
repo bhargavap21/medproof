@@ -16,9 +16,6 @@ import HospitalDataAccessDashboard from './components/HospitalDataAccessDashboar
 import HospitalDataRequestForm from './components/HospitalDataRequestForm';
 // import HospitalDataApprovalDashboard from './components/HospitalDataApprovalDashboard';
 import ZKProofGenerator from './components/ZKProofGenerator';
-// Lazy load study request components to avoid circular dependency issues
-const StudyRequestWizard = React.lazy(() => import('./components/study-request/StudyRequestWizard'));
-const StudyRequestsList = React.lazy(() => import('./components/study-request/StudyRequestsList'));
 import HospitalAdminAuth from './components/hospital-admin/HospitalAdminAuth';
 import HospitalRegistrationWizard from './components/hospital-admin/HospitalRegistrationWizard';
 import HospitalManagementDashboard from './components/hospital-admin/HospitalManagementDashboard';
@@ -27,6 +24,10 @@ import AuthWrapper from './components/auth/AuthWrapper';
 import { APIProvider } from './hooks/useAPI';
 import { Web3Provider } from './hooks/useWeb3';
 import { AuthProvider } from './hooks/useAuth';
+
+// Lazy load study request components to avoid circular dependency issues
+const StudyRequestWizard = React.lazy(() => import('./components/study-request/StudyRequestWizard'));
+const StudyRequestsList = React.lazy(() => import('./components/study-request/StudyRequestsList'));
 
 function App() {
   useEffect(() => {
