@@ -16,8 +16,9 @@ import HospitalDataAccessDashboard from './components/HospitalDataAccessDashboar
 import HospitalDataRequestForm from './components/HospitalDataRequestForm';
 // import HospitalDataApprovalDashboard from './components/HospitalDataApprovalDashboard';
 import ZKProofGenerator from './components/ZKProofGenerator';
-import StudyRequestWizard from './components/study-request/StudyRequestWizard';
-import StudyRequestsList from './components/study-request/StudyRequestsList';
+// Lazy load study request components to avoid circular dependency issues
+const StudyRequestWizard = React.lazy(() => import('./components/study-request/StudyRequestWizard'));
+const StudyRequestsList = React.lazy(() => import('./components/study-request/StudyRequestsList'));
 import HospitalAdminAuth from './components/hospital-admin/HospitalAdminAuth';
 import HospitalRegistrationWizard from './components/hospital-admin/HospitalRegistrationWizard';
 import HospitalManagementDashboard from './components/hospital-admin/HospitalManagementDashboard';
@@ -78,8 +79,16 @@ function App() {
                     <Route path="/organization/:id" element={<OrganizationManagement />} />
                     <Route path="/hospital-data-request" element={<HospitalDataRequestForm />} />
                     <Route path="/zk-proof-generator" element={<ZKProofGenerator />} />
-                    <Route path="/study-request/create" element={<StudyRequestWizard />} />
-                    <Route path="/study-requests" element={<StudyRequestsList />} />
+                    <Route path="/study-request/create" element={
+                      <React.Suspense fallback={<div>Loading...</div>}>
+                        <StudyRequestWizard />
+                      </React.Suspense>
+                    } />
+                    <Route path="/study-requests" element={
+                      <React.Suspense fallback={<div>Loading...</div>}>
+                        <StudyRequestsList />
+                      </React.Suspense>
+                    } />
                     <Route path="/research-results" element={<ResearchResults />} />
                     <Route path="/hospitals" element={<HospitalNetwork />} />
                     <Route path="/organizations" element={<OrganizationDashboard />} />
