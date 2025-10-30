@@ -140,12 +140,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
               variant="outlined"
               size="small"
               onClick={() => window.location.href = '/hospital-admin/login'}
-              sx={{ 
-                color: '#1976d2', 
-                borderColor: '#1976d2',
+              sx={{
+                color: 'primary.main',
+                borderColor: 'primary.main',
                 '&:hover': {
-                  borderColor: '#1565c0',
-                  bgcolor: 'rgba(25, 118, 210, 0.04)'
+                  borderColor: 'primary.dark',
+                  bgcolor: 'rgba(88, 166, 255, 0.1)'
                 }
               }}
             >

@@ -8,8 +8,6 @@ import {
   Button,
   Container,
   Grid,
-  Card,
-  CardContent,
   Chip,
 } from '@mui/material';
 import {
@@ -21,10 +19,8 @@ import {
   NetworkCheck,
   ArrowForward,
   CheckCircle,
-  Star,
   Biotech,
   HealthAndSafety,
-  Psychology,
   KeyboardArrowDown,
   X as XIcon,
   Facebook,
@@ -306,7 +302,7 @@ const LandingPage: React.FC = () => {
 
             <Button
               variant="outlined"
-              onClick={() => navigate('/app')}
+              onClick={() => navigate('/dashboard')}
               sx={{
                 display: { xs: 'none', md: 'flex' },
                 alignItems: 'center',
@@ -477,7 +473,7 @@ const LandingPage: React.FC = () => {
                 variant="contained"
                 size="large"
                 endIcon={<ArrowForward />}
-                onClick={() => navigate('/app/research')}
+                onClick={() => navigate('/dashboard')}
                 sx={{
                 background: '#58a6ff',
                   color: '#ffffff',
@@ -598,109 +594,106 @@ const LandingPage: React.FC = () => {
           opacity: 0.05,
           background: 'radial-gradient(circle at 60% 80%, #1e3a5f 0%, transparent 40%)',
         }} />
-        
+
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 10 }}>
+          {/* Blue bordered box containing everything */}
           <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            textAlign: 'center',
-            maxWidth: '768px',
-            mx: 'auto',
-            mb: 8,
+            border: '2px solid #58a6ff',
+            borderRadius: '24px',
+            p: { xs: 4, md: 8 },
+            background: 'rgba(13, 17, 23, 0.6)',
+            backdropFilter: 'blur(10px)',
           }}>
-            <Chip
-              icon={<Star sx={{ fontSize: 14, color: '#58a6ff' }} />}
-              label="BENEFITS"
-              sx={{
-                background: '#161b22',
-                border: '1px solid #30363d',
-                color: '#8b949e',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                letterSpacing: '0.05em',
-                mb: 2,
-              }}
-            />
-            
-            <Typography sx={{
-              fontSize: { xs: '2.5rem', md: '3rem' },
-              fontWeight: 600,
-              color: '#f0f6fc',
-              lineHeight: 1.2,
-              mb: 3,
+            {/* Header */}
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              mb: 8,
             }}>
-              Why Choose{' '}
-              <Box component="span" sx={{
-                fontFamily: 'Playfair Display, serif',
-                fontStyle: 'italic',
-                color: '#58a6ff',
-                fontWeight: 400,
-              }}>
-                MedProof?
-              </Box>
-            </Typography>
-
-            <Typography sx={{
-              fontSize: '1.125rem',
-              color: '#8b949e',
-              lineHeight: 1.6,
-            }}>
-              Everything you need to automate, optimize, and scale medical research
-            </Typography>
-          </Box>
-
-          <Grid container spacing={4}>
-            {benefits.map((benefit, index) => (
-              <Grid item xs={12} md={6} lg={4} key={index}>
-                <Card sx={{
-                  background: '#161b22',
+              <Chip
+                label="Process"
+                sx={{
+                  background: 'transparent',
                   border: '1px solid #30363d',
-                  borderRadius: '16px',
-                  p: 4,
-                  height: '100%',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-                  },
+                  color: '#8b949e',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  letterSpacing: '0.05em',
+                  mb: 4,
+                  px: 2,
+                }}
+              />
+
+              <Typography sx={{
+                fontSize: { xs: '2.5rem', md: '3.5rem' },
+                fontWeight: 400,
+                color: '#f0f6fc',
+                lineHeight: 1.2,
+                mb: 3,
+              }}>
+                Medical research,{' '}
+                <Box component="span" sx={{
+                  fontFamily: 'Playfair Display, serif',
+                  fontStyle: 'italic',
+                  fontWeight: 400,
                 }}>
+                  privacy-preserved
+                </Box>
+                .
+              </Typography>
+
+              <Typography sx={{
+                fontSize: '1.125rem',
+                color: '#8b949e',
+                lineHeight: 1.6,
+              }}>
+                Collaborate across hospitals while protecting patient privacy with zero-knowledge proofs.
+              </Typography>
+            </Box>
+
+            {/* Benefits Grid */}
+            <Grid container spacing={6}>
+              {benefits.map((benefit, index) => (
+                <Grid item xs={12} md={4} key={index}>
                   <Box sx={{
-                    position: 'absolute',
-                    top: -48,
-                    left: -48,
-                    width: 320,
-                    height: 250,
-                    background: 'radial-gradient(50% 50% at 50% 50%, rgba(43,85,140,0.15) 0%, rgba(43,85,140,0) 100%)',
-                  }} />
-                  
-                  <CardContent sx={{ p: 0, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ height: 96, mb: 2 }}>
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    height: '100%',
+                  }}>
+                    <Box sx={{
+                      mb: 3,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
                       {benefit.icon}
                     </Box>
-                    
-                    <Typography variant="h6" sx={{
-                      fontWeight: 600,
+
+                    <Typography variant="h5" sx={{
+                      fontWeight: 500,
                       color: '#f0f6fc',
                       mb: 2,
                       fontSize: '1.5rem',
                     }}>
                       {benefit.title}
                     </Typography>
-                    
+
                     <Typography sx={{
                       color: '#8b949e',
-                      lineHeight: 1.6,
+                      lineHeight: 1.7,
+                      fontSize: '1rem',
                     }}>
                       {benefit.description}
                     </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
         </Container>
       </Box>
 
@@ -714,111 +707,77 @@ const LandingPage: React.FC = () => {
             mx: 'auto',
             maxWidth: '768px',
             textAlign: 'center',
-            mb: 8,
+            mb: 10,
           }}>
             <Chip
-              icon={<Psychology sx={{ fontSize: 16, color: '#58a6ff' }} />}
-              label="FEATURES"
+              label="Features"
               sx={{
-                background: '#161b22',
+                background: 'transparent',
                 border: '1px solid #30363d',
-                color: '#f0f6fc',
+                color: '#8b949e',
                 fontSize: '0.875rem',
                 fontWeight: 500,
-              mb: 3,
+                letterSpacing: '0.05em',
+                mb: 4,
+                px: 2,
               }}
             />
-            
+
             <Typography sx={{
-              fontSize: { xs: '2rem', md: '3rem' },
-              fontWeight: 600,
+              fontSize: { xs: '2.5rem', md: '3.5rem' },
+              fontWeight: 400,
               color: '#f0f6fc',
-              mb: 2,
+              mb: 3,
             }}>
-              All features in one place
+              Why MedProof is the Right Choice
             </Typography>
-            
+
             <Typography sx={{
               fontSize: '1.125rem',
               color: '#8b949e',
+              lineHeight: 1.6,
             }}>
-              Everything you need to automate medical research operations, boost productivity
+              A comprehensive platform designed to transform how medical institutions collaborate on research while maintaining the highest standards of data privacy and security.
             </Typography>
           </Box>
 
-          <Grid container spacing={4}>
+          <Grid container spacing={8}>
             {features.map((feature, index) => (
               <Grid item xs={12} md={6} lg={4} key={index}>
-                <Card sx={{
-                  position: 'relative',
-                  overflow: 'hidden',
-                  borderRadius: '8px',
-                  border: '1px solid #30363d',
-                  background: '#161b22',
-                  p: 4,
+                <Box sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  textAlign: 'center',
                   height: '100%',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                  },
                 }}>
                   <Box sx={{
-                    position: 'absolute',
-                    zIndex: 0,
-                    left: '50%',
-                    top: 0,
-                    height: 150,
-                    width: '150%',
-                    transform: 'translateX(-50%)',
-                    borderRadius: '50%',
-                    background: 'rgba(88, 166, 255, 0.05)',
-                    filter: 'blur(48px)',
-                  }} />
-                  
-                  <CardContent sx={{ p: 0, position: 'relative', zIndex: 10 }}>
-                    <Box sx={{ height: 148, mb: 2 }}>
-                    <Box sx={{
-                        position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                        width: 88,
-                        height: 88,
-                        borderRadius: '8px',
-                        border: '1px solid #30363d',
-                        background: '#0d1117',
-                      }}>
-                        <Box sx={{
-                          position: 'absolute',
-                          color: '#58a6ff',
-                          opacity: 0.2,
-                          filter: 'blur(2px)',
-                    }}>
-                      {feature.icon}
-                        </Box>
-                        <Box sx={{ position: 'relative', color: '#f0f6fc' }}>
-                          {feature.icon}
-                        </Box>
-                      </Box>
-                    </Box>
+                    mb: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#f0f6fc',
+                  }}>
+                    {feature.icon}
+                  </Box>
 
-                    <Typography variant="h6" sx={{
-                      fontSize: '1.5rem',
-                      fontWeight: 600,
-                      color: '#f0f6fc',
-                      mb: 1,
-                    }}>
-                      {feature.title}
-                    </Typography>
+                  <Typography variant="h5" sx={{
+                    fontSize: '1.5rem',
+                    fontWeight: 500,
+                    color: '#f0f6fc',
+                    mb: 2,
+                  }}>
+                    {feature.title}
+                  </Typography>
 
-                    <Typography sx={{
-                      color: '#8b949e',
-                      lineHeight: 1.6,
-                    }}>
-                      {feature.description}
-                    </Typography>
-                  </CardContent>
-                </Card>
+                  <Typography sx={{
+                    color: '#8b949e',
+                    lineHeight: 1.7,
+                    fontSize: '1rem',
+                  }}>
+                    {feature.description}
+                  </Typography>
+                </Box>
               </Grid>
             ))}
           </Grid>
@@ -860,7 +819,7 @@ const LandingPage: React.FC = () => {
                 variant="outlined"
                 size="large"
                 endIcon={<ArrowForward />}
-                onClick={() => navigate('/app/research')}
+                onClick={() => navigate('/research')}
                 sx={{
                   borderColor: '#58a6ff',
                   color: '#58a6ff',
@@ -981,7 +940,7 @@ const LandingPage: React.FC = () => {
               </Typography>
 
                 <Button
-                  onClick={() => navigate('/app/organization/register')}
+                  onClick={() => navigate('/organization/register')}
                   sx={{
               position: 'relative',
               display: 'inline-flex',
