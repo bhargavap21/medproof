@@ -186,6 +186,7 @@ const Dashboard: React.FC = () => {
   };
 
   const getOrganizationTypeLabel = (type: string) => {
+    if (!type) return 'Unknown';
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
@@ -588,7 +589,7 @@ const Dashboard: React.FC = () => {
                       {/* Status Badges */}
                       <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
                         <Chip
-                          label={org.verification_status.toUpperCase()}
+                          label={(org.verification_status || 'unknown').toUpperCase()}
                           size="small"
                           sx={{
                             bgcolor: getVerificationColor(org.verification_status) + '20',
@@ -599,7 +600,7 @@ const Dashboard: React.FC = () => {
                           }}
                         />
                         <Chip
-                          label={orgMembership.role.toUpperCase()}
+                          label={(orgMembership.role || 'member').toUpperCase()}
                           size="small"
                           variant="outlined"
                           color="primary"
