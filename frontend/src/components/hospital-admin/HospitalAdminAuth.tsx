@@ -117,8 +117,7 @@ export default function HospitalAdminAuth() {
             *,
             hospitals (
               id,
-              name,
-              is_active
+              name
             )
           `)
           .eq('user_id', authData.user.id)
@@ -199,8 +198,7 @@ export default function HospitalAdminAuth() {
               *,
               hospitals (
                 id,
-                name,
-                is_active
+                name
               )
             `)
             .single();
