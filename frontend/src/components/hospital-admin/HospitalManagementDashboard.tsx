@@ -113,7 +113,7 @@ export default function HospitalManagementDashboard() {
       
       // Load data access requests for this hospital
       const { data: requestsData, error: requestsError } = await supabase
-        .from('data_access_requests')
+        .from('hospital_data_access_requests')
         .select(`
           *,
           organizations (
@@ -166,7 +166,7 @@ export default function HospitalManagementDashboard() {
   const handleRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
     try {
       const { error } = await supabase
-        .from('data_access_requests')
+        .from('hospital_data_access_requests')
         .update({ 
           status: action === 'approve' ? 'approved' : 'rejected',
           updated_at: new Date().toISOString()
