@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Box, Container } from '@mui/material';
 import Navigation from './components/Navigation';
 import SidebarLayout from './components/SidebarLayout';
+import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import HospitalDashboard from './pages/HospitalDashboard';
 import ResearchAggregator from './pages/ResearchAggregator';
@@ -16,8 +17,6 @@ import HospitalDataAccessDashboard from './components/HospitalDataAccessDashboar
 import HospitalDataRequestForm from './components/HospitalDataRequestForm';
 // import HospitalDataApprovalDashboard from './components/HospitalDataApprovalDashboard';
 import ZKProofGenerator from './components/ZKProofGenerator';
-import StudyRequestWizard from './components/study-request/StudyRequestWizard';
-import StudyRequestsList from './components/study-request/StudyRequestsList';
 import HospitalAdminAuth from './components/hospital-admin/HospitalAdminAuth';
 import HospitalRegistrationWizard from './components/hospital-admin/HospitalRegistrationWizard';
 import HospitalManagementDashboard from './components/hospital-admin/HospitalManagementDashboard';
@@ -28,6 +27,10 @@ import AuthWrapper from './components/auth/AuthWrapper';
 import { APIProvider } from './hooks/useAPI';
 import { Web3Provider } from './hooks/useWeb3';
 import { AuthProvider } from './hooks/useAuth';
+
+// Lazy load study request components to avoid circular dependency issues
+const StudyRequestWizard = React.lazy(() => import('./components/study-request/StudyRequestWizard'));
+const StudyRequestsList = React.lazy(() => import('./components/study-request/StudyRequestsList'));
 
 function App() {
   useEffect(() => {
@@ -59,6 +62,9 @@ function App() {
       <Web3Provider>
         <APIProvider>
           <Routes>
+            {/* Landing Page - No Auth Required */}
+            <Route path="/" element={<LandingPage />} />
+
             {/* Hospital Admin Routes - Completely Separate Portal (No Sidebar) */}
             <Route path="/hospital-admin/login" element={<HospitalAdminAuth />} />
             <Route path="/hospital-admin/register" element={<HospitalRegistrationWizard />} />
@@ -71,7 +77,7 @@ function App() {
               <AuthWrapper>
                 <SidebarLayout>
                   <Routes>
-                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/hospital/:hospitalId" element={<HospitalDashboard />} />
                     <Route path="/research" element={<ResearchAggregator />} />
                     <Route path="/study/:studyId" element={<StudyDetails />} />
@@ -82,8 +88,16 @@ function App() {
                     <Route path="/organization/:id" element={<OrganizationManagement />} />
                     <Route path="/hospital-data-request" element={<HospitalDataRequestForm />} />
                     <Route path="/zk-proof-generator" element={<ZKProofGenerator />} />
-                    <Route path="/study-request/create" element={<StudyRequestWizard />} />
-                    <Route path="/study-requests" element={<StudyRequestsList />} />
+                    <Route path="/study-request/create" element={
+                      <React.Suspense fallback={<div>Loading...</div>}>
+                        <StudyRequestWizard />
+                      </React.Suspense>
+                    } />
+                    <Route path="/study-requests" element={
+                      <React.Suspense fallback={<div>Loading...</div>}>
+                        <StudyRequestsList />
+                      </React.Suspense>
+                    } />
                     <Route path="/research-results" element={<ResearchResults />} />
                     <Route path="/hospitals" element={<HospitalNetwork />} />
                     <Route path="/organizations" element={<OrganizationDashboard />} />

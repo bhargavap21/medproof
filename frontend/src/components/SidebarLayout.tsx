@@ -34,7 +34,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#f8f9fa',
+          backgroundColor: 'background.default',
         }}
       >
         {/* Top Header Bar */}
@@ -43,9 +43,10 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
           display: 'flex',
           alignItems: 'center',
           px: 3,
-          backgroundColor: 'white',
-          borderBottom: '1px solid #e0e0e0',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          backgroundColor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          boxShadow: 'none',
           zIndex: 1,
         }}>
           <IconButton
@@ -54,7 +55,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
               color: 'text.secondary',
               '&:hover': {
                 color: 'primary.main',
-                backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                backgroundColor: 'rgba(88, 166, 255, 0.1)',
               },
             }}
           >
