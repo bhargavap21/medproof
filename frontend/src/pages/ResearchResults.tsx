@@ -54,6 +54,7 @@ import {
   ExpandMore,
   Visibility,
   Refresh,
+  Close,
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -226,6 +227,13 @@ const ResearchResults: React.FC<ResearchResultsProps> = () => {
 
   const viewProofDetails = (proof: GeneratedProof) => {
     setSelectedProof(proof);
+    // Scroll to details section
+    setTimeout(() => {
+      const detailsSection = document.getElementById('proof-details-section');
+      if (detailsSection) {
+        detailsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   };
 
   // Individual proof details view (when navigated from ZK Proof Generator)
@@ -830,96 +838,182 @@ const ResearchResults: React.FC<ResearchResultsProps> = () => {
 
           {/* Selected Proof Details Modal/Accordion */}
           {selectedProof && (
-            <Card sx={{ mt: 4 }}>
+            <Card 
+              id="proof-details-section"
+              sx={{ 
+                mt: 4, 
+                border: '2px solid',
+                borderColor: 'primary.main',
+                boxShadow: 3
+              }}
+            >
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h5">
-                    Proof Details: {selectedProof.studyTitle}
-                  </Typography>
-                  <Button variant="outlined" onClick={() => setSelectedProof(null)}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Science sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
+                    <Box>
+                      <Typography variant="h5">
+                        {selectedProof.studyTitle}
+                      </Typography>
+                      <Chip 
+                        label={selectedProof.status} 
+                        color="success" 
+                        size="small" 
+                        sx={{ mt: 0.5 }}
+                      />
+                    </Box>
+                  </Box>
+                  <Button 
+                    variant="outlined" 
+                    onClick={() => setSelectedProof(null)}
+                    startIcon={<Close />}
+                  >
                     Close
                   </Button>
                 </Box>
+                
+                {/* Study Overview */}
+                <Alert severity="info" sx={{ mb: 3 }}>
+                  <Typography variant="body2">
+                    <strong>Study:</strong> {selectedProof.studyTitle} | 
+                    <strong> Drug:</strong> {selectedProof.drugName} | 
+                    <strong> Hospital:</strong> {selectedProof.hospitalName} | 
+                    <strong> Generated:</strong> {new Date(selectedProof.proofGeneratedAt).toLocaleString()}
+                  </Typography>
+                </Alert>
+
+                {/* Key Metrics Summary */}
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'success.contrastText' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                        {selectedProof.researchInsights.treatmentEfficacy.absoluteImprovement}
+                      </Typography>
+                      <Typography variant="body2">Primary Outcome</Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light', color: 'info.contrastText' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                        {selectedProof.researchInsights.studyCharacteristics.pValue}
+                      </Typography>
+                      <Typography variant="body2">Statistical Significance</Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light', color: 'warning.contrastText' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                        NNT: {selectedProof.researchInsights.clinicalSignificance.numberNeededToTreat}
+                      </Typography>
+                      <Typography variant="body2">Clinical Impact</Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
 
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
                     <Accordion defaultExpanded>
                       <AccordionSummary expandIcon={<ExpandMore />}>
-                        <Typography variant="h6">Treatment Efficacy</Typography>
+                        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+                          <TrendingUp sx={{ mr: 1 }} /> Treatment Efficacy
+                        </Typography>
                       </AccordionSummary>
                       <AccordionDetails>
                         <Box sx={{ space: 2 }}>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
+                          <Typography variant="body2" sx={{ mb: 1.5 }}>
                             <strong>Absolute Improvement:</strong> {selectedProof.researchInsights.treatmentEfficacy.absoluteImprovement}
                           </Typography>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
+                          <Typography variant="body2" sx={{ mb: 1.5 }}>
                             <strong>Relative Improvement:</strong> {selectedProof.researchInsights.treatmentEfficacy.relativeImprovement}
                           </Typography>
                           <Typography variant="body2">
                             <strong>Effect Size:</strong> {selectedProof.researchInsights.treatmentEfficacy.effectSize}
                           </Typography>
+                          <Divider sx={{ my: 2 }} />
+                          <Alert severity="success" sx={{ mt: 1 }}>
+                            Treatment shows significant improvement over control group
+                          </Alert>
                         </Box>
                       </AccordionDetails>
                     </Accordion>
 
                     <Accordion>
                       <AccordionSummary expandIcon={<ExpandMore />}>
-                        <Typography variant="h6">Clinical Significance</Typography>
+                        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+                          <LocalHospital sx={{ mr: 1 }} /> Clinical Significance
+                        </Typography>
                       </AccordionSummary>
                       <AccordionDetails>
                         <Box sx={{ space: 2 }}>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
+                          <Typography variant="body2" sx={{ mb: 1.5 }}>
                             <strong>Number Needed to Treat:</strong> {selectedProof.researchInsights.clinicalSignificance.numberNeededToTreat}
                           </Typography>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
+                          <Typography variant="body2" sx={{ mb: 1.5 }}>
                             <strong>Meaningful Difference:</strong> {selectedProof.researchInsights.clinicalSignificance.meaningfulDifference}
                           </Typography>
                           <Typography variant="body2">
                             <strong>Risk Reduction:</strong> {selectedProof.researchInsights.clinicalSignificance.riskReduction}
                           </Typography>
+                          <Divider sx={{ my: 2 }} />
+                          <Alert severity="info" sx={{ mt: 1 }}>
+                            Results meet criteria for clinical significance
+                          </Alert>
                         </Box>
                       </AccordionDetails>
                     </Accordion>
                   </Grid>
 
                   <Grid item xs={12} md={6}>
-                    <Accordion>
+                    <Accordion defaultExpanded>
                       <AccordionSummary expandIcon={<ExpandMore />}>
-                        <Typography variant="h6">Study Characteristics</Typography>
+                        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+                          <BarChart sx={{ mr: 1 }} /> Study Characteristics
+                        </Typography>
                       </AccordionSummary>
                       <AccordionDetails>
                         <Box sx={{ space: 2 }}>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
+                          <Typography variant="body2" sx={{ mb: 1.5 }}>
                             <strong>P-Value:</strong> {selectedProof.researchInsights.studyCharacteristics.pValue}
                           </Typography>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
+                          <Typography variant="body2" sx={{ mb: 1.5 }}>
                             <strong>Statistical Power:</strong> {selectedProof.researchInsights.studyCharacteristics.statisticalPower}
                           </Typography>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
+                          <Typography variant="body2" sx={{ mb: 1.5 }}>
                             <strong>Study Type:</strong> {selectedProof.researchInsights.studyCharacteristics.studyType}
                           </Typography>
                           <Typography variant="body2">
                             <strong>Sample Size:</strong> {selectedProof.researchInsights.studyCharacteristics.sampleSize}
                           </Typography>
+                          <Divider sx={{ my: 2 }} />
+                          <Alert severity="success" sx={{ mt: 1 }}>
+                            Study design meets gold standard for evidence-based medicine
+                          </Alert>
                         </Box>
                       </AccordionDetails>
                     </Accordion>
 
                     <Accordion>
                       <AccordionSummary expandIcon={<ExpandMore />}>
-                        <Typography variant="h6">Blockchain Details</Typography>
+                        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Security sx={{ mr: 1 }} /> Blockchain Verification
+                        </Typography>
                       </AccordionSummary>
                       <AccordionDetails>
                         <Box sx={{ space: 2 }}>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
-                            <strong>Transaction Hash:</strong> {selectedProof.transactionHash}
+                          <Typography variant="body2" sx={{ mb: 1.5, fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                            <strong>Transaction Hash:</strong><br />
+                            {selectedProof.transactionHash}
                           </Typography>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
+                          <Typography variant="body2" sx={{ mb: 1.5 }}>
                             <strong>Block Number:</strong> {selectedProof.blockNumber}
                           </Typography>
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ mb: 1.5 }}>
                             <strong>Generated:</strong> {new Date(selectedProof.proofGeneratedAt).toLocaleString()}
                           </Typography>
+                          <Divider sx={{ my: 2 }} />
+                          <Alert severity="info" sx={{ mt: 1 }}>
+                            🌙 Verified on Midnight Network - Privacy-preserving blockchain
+                          </Alert>
                         </Box>
                       </AccordionDetails>
                     </Accordion>

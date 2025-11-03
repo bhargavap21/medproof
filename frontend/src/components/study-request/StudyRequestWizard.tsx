@@ -135,7 +135,7 @@ const StudyRequestWizard: React.FC = () => {
 
       console.log('📤 Submitting study request:', studyRequestData);
 
-      const response = await fetch('/api/study-requests', {
+      const response = await fetch('http://localhost:3001/api/study-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

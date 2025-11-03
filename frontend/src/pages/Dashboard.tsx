@@ -57,7 +57,7 @@ const Dashboard: React.FC = () => {
   const loadStudyRequests = async () => {
     try {
       setStudyRequestsLoading(true);
-      const response = await fetch('/api/study-requests');
+      const response = await fetch('http://localhost:3001/api/study-requests');
       if (response.ok) {
         const data = await response.json();
         setStudyRequests(data.studyRequests || []);
