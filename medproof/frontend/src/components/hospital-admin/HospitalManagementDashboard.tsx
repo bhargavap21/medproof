@@ -113,10 +113,10 @@ export default function HospitalManagementDashboard() {
       
       // Load data access requests for this hospital
       const { data: requestsData, error: requestsError } = await supabase
-        .from('data_access_requests')
+        .from('hospital_data_access_requests')
         .select(`
           *,
-          organizations (
+          research_organizations (
             name
           )
         `)
@@ -128,7 +128,7 @@ export default function HospitalManagementDashboard() {
       // Transform the data
       const transformedRequests = requestsData?.map(req => ({
         ...req,
-        organization_name: req.organizations?.name || 'Unknown Organization'
+        organization_name: req.research_organizations?.name || 'Unknown Organization'
       })) || [];
 
       setRequests(transformedRequests);
@@ -166,7 +166,7 @@ export default function HospitalManagementDashboard() {
   const handleRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
     try {
       const { error } = await supabase
-        .from('data_access_requests')
+        .from('hospital_data_access_requests')
         .update({ 
           status: action === 'approve' ? 'approved' : 'rejected',
           updated_at: new Date().toISOString()
