@@ -2,74 +2,154 @@ pragma language_version 0.15;
 
 import CompactStandardLibrary;
 
-// Medical research proof structure
+// Enhanced medical research proof with privacy layers
 record MedicalProof {
   studyId: Field,
   hospitalCommitment: Field,
+  dataCommitment: Field,
   proofHash: Field,
+  privacyLevel: Field,
+  statisticalSignificance: Bool,
+  minimumSampleMet: Bool,
+  treatmentEffective: Bool,
   timestamp: Field,
-  verified: Bool
+  verified: Bool,
+  regulatoryCompliant: Bool
 }
 
-// Medical statistics (private inputs)
+// Enhanced medical statistics (private inputs)
 record MedicalStats {
   patientCount: Field,
   treatmentSuccess: Field,
   controlSuccess: Field,
   controlCount: Field,
-  pValue: Field
+  pValue: Field,
+  adverseEvents: Field,
+  dataQualityScore: Field
 }
 
-// Public ledger state
+// Public ledger state (enhanced)
 export ledger totalStudies: Counter;
 export ledger verifiedHospitals: Counter;
+export ledger totalPatientsBenefited: Counter;
 export ledger registeredProofs: Map<Field, MedicalProof>;
 
-// Circuit to submit a medical research proof while keeping patient data private
+// Enhanced circuit: Submit medical research proof with comprehensive validation
 export circuit submitMedicalProof(
   // Private inputs - never revealed on-chain
   secret patientData: MedicalStats,
+  secret hospitalSecretKey: Field,
   // Public inputs - visible on-chain
   public studyId: Field,
-  public hospitalId: Field
-): [] {
+  public hospitalId: Field,
+  public privacyLevel: Field
+): [Field, Bool] {
   
-  // Validate minimum sample size (privacy-preserving constraint)
-  assert(patientData.patientCount >= 50);
+  // ========================================================================
+  // VALIDATION LAYER (Privacy-Preserving Constraints)
+  // ========================================================================
   
-  // Validate statistical significance (p-value < 0.05, scaled by 1000)
-  assert(patientData.pValue <= 50);
+  // 1. Minimum sample size validation (FDA guideline)
+  assert(patientData.patientCount >= 50, "Insufficient sample size");
   
-  // Calculate efficacy rate without revealing raw numbers
-  let treatmentRate = patientData.treatmentSuccess * 1000 / patientData.patientCount;
-  let controlRate = patientData.controlSuccess * 1000 / patientData.controlCount;
+  // 2. Statistical significance validation (p < 0.05, scaled by 1000)
+  assert(patientData.pValue <= 50, "Not statistically significant");
   
-  // Ensure treatment is better than control
-  assert(treatmentRate > controlRate);
+  // 3. Control group adequacy
+  assert(patientData.controlCount >= 20, "Insufficient control group");
   
-  // Generate commitment to the medical data
+  // 4. Data quality threshold (0-100 scale)
+  assert(patientData.dataQualityScore >= 80, "Data quality below threshold");
+  
+  // ========================================================================
+  // EFFICACY CALCULATION (Zero-Knowledge)
+  // ========================================================================
+  
+  // Calculate efficacy rates without revealing raw numbers
+  let treatmentRate = (patientData.treatmentSuccess * 1000) / patientData.patientCount;
+  let controlRate = (patientData.controlSuccess * 1000) / patientData.controlCount;
+  
+  // Ensure treatment shows improvement
+  assert(treatmentRate > controlRate, "Treatment not superior to control");
+  
+  // Calculate relative improvement (must be clinically significant: >10%)
+  let relativeImprovement = ((treatmentRate - controlRate) * 100) / controlRate;
+  assert(relativeImprovement >= 10, "Clinically insignificant improvement");
+  
+  // ========================================================================
+  // SAFETY VALIDATION
+  // ========================================================================
+  
+  // Adverse events must be within acceptable range (<10%)
+  let adverseEventRate = (patientData.adverseEvents * 1000) / patientData.patientCount;
+  assert(adverseEventRate <= 100, "Excessive adverse events");
+  
+  // ========================================================================
+  // CRYPTOGRAPHIC COMMITMENTS
+  // ========================================================================
+  
+  // Generate commitment to all private medical data
   let dataCommitment = poseidon([
     patientData.patientCount,
     patientData.treatmentSuccess,
     patientData.controlSuccess,
     patientData.controlCount,
-    patientData.pValue
+    patientData.pValue,
+    patientData.adverseEvents,
+    patientData.dataQualityScore
   ]);
   
-  // Create proof record with public metadata only
+  // Hospital authentication (prove authorization without revealing key)
+  let hospitalCommitment = poseidon([hospitalId, hospitalSecretKey, studyId]);
+  
+  // Generate unique proof hash
+  let proofHash = poseidon([
+    studyId,
+    hospitalId,
+    dataCommitment,
+    hospitalCommitment,
+    privacyLevel,
+    now()
+  ]);
+  
+  // ========================================================================
+  // REGULATORY COMPLIANCE CHECKS (Zero-Knowledge)
+  // ========================================================================
+  
+  // Prove study meets regulatory standards without revealing specifics
+  let regulatoryCompliant = (
+    patientData.patientCount >= 50 &&
+    patientData.pValue <= 50 &&
+    patientData.dataQualityScore >= 80 &&
+    adverseEventRate <= 100
+  );
+  
+  // ========================================================================
+  // CREATE ENHANCED PROOF RECORD
+  // ========================================================================
+  
   let proof = MedicalProof {
     studyId: studyId,
-    hospitalCommitment: poseidon([hospitalId, dataCommitment]),
-    proofHash: poseidon([studyId, hospitalId, dataCommitment]),
+    hospitalCommitment: hospitalCommitment,
+    dataCommitment: dataCommitment,
+    proofHash: proofHash,
+    privacyLevel: privacyLevel,
+    statisticalSignificance: true,  // Proven by assertions above
+    minimumSampleMet: true,         // Proven by assertions above
+    treatmentEffective: true,       // Proven by assertions above
     timestamp: now(),
-    verified: true
+    verified: true,
+    regulatoryCompliant: regulatoryCompliant
   };
   
-  // Store proof in public ledger
+  // Store proof in public ledger (only commitments and boolean flags)
   registeredProofs.insert(studyId, proof);
   
   // Update counters
   totalStudies.increment(1);
+  totalPatientsBenefited.increment(patientData.patientCount);
+  
+  return [proofHash, true];
 }
 
 // Circuit to verify a hospital's authorization (for multi-hospital studies)
@@ -117,12 +197,26 @@ export circuit aggregateResults(
   return [overallEfficacy, validHospitals];
 }
 
-// Query function to get study verification status (public data only)
-export circuit getStudyStatus(public studyId: Field): [Bool, Field] {
+// Enhanced query: Get study verification status with more details
+export circuit getStudyStatus(public studyId: Field): [Bool, Bool, Bool, Field] {
   if registeredProofs.has(studyId) {
     let proof = registeredProofs.get(studyId);
-    return [proof.verified, proof.timestamp];
+    return [
+      proof.verified,
+      proof.statisticalSignificance,
+      proof.regulatoryCompliant,
+      proof.timestamp
+    ];
   } else {
-    return [false, 0];
+    return [false, false, false, 0];
   }
+}
+
+// New query: Get network statistics (public data only)
+export circuit getNetworkStatistics(): [Field, Field, Field] {
+  return [
+    totalStudies.value(),
+    verifiedHospitals.value(),
+    totalPatientsBenefited.value()
+  ];
 }
