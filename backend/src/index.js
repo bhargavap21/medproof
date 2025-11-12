@@ -33,7 +33,23 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(helmet());
+// Configure Helmet to allow WebAssembly for Midnight Network SDK
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-eval'", "'wasm-unsafe-eval'"], // Allow WASM for Midnight SDK
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'", "https://rpc.testnet.midnight.network", "https://proof-server.testnet.midnight.network"],
+            fontSrc: ["'self'", "https:", "data:"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+        },
+    },
+    crossOriginEmbedderPolicy: false, // Disable for Midnight SDK compatibility
+}));
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -64,6 +80,16 @@ const hospitalDataAccessService = new HospitalDataAccessService();
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
+    });
+});
+
+// API health check endpoint (for consistency)
+app.get('/api/health', (req, res) => {
+    res.json({
+        success: true,
         status: 'healthy',
         timestamp: new Date().toISOString(),
         version: '1.0.0'

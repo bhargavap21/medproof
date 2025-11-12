@@ -6,10 +6,11 @@ MedProof is a zero-knowledge proof platform that enables hospitals to collaborat
 
 ## Architecture
 
-- **Smart Contracts**: Solidity contracts for proof registration and verification
-- **ZK Circuits**: Zero-knowledge circuits for medical statistics verification
-- **Frontend**: React dashboard for hospitals and researchers
-- **Backend**: Node.js API for FHIR integration and proof generation
+- **Midnight Network**: Privacy-preserving blockchain using Compact smart contracts
+- **Compact Contracts**: Zero-knowledge circuits for medical statistics verification and proof registration
+- **ZK Proof Generation**: Real ZK-SNARKs via Midnight Network's submitMedicalProof circuit
+- **Frontend**: React dashboard for hospitals and researchers with real-time Midnight Network status
+- **Backend**: Node.js API integrating with Midnight Network for FHIR and proof generation
 - **Synthetic Data**: Realistic medical data generation for demonstrations
 
 ## Quick Start

@@ -1,0 +1,9 @@
+pragma language_version 0.18;
+
+import CompactStandardLibrary;
+
+// Simple test contract
+circuit testCircuit(): [] {
+  // Empty circuit for testing compilation
+}
+

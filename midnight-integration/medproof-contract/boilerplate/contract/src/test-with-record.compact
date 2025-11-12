@@ -1,0 +1,16 @@
+pragma language_version 0.15;
+
+import CompactStandardLibrary;
+
+// Test with a simple record
+struct ProofData {
+  id: Field,
+  verified: Bool
+}
+
+export ledger proofs: Map<Field, ProofData>;
+
+export circuit submitProof(proofId: Field): [] {
+  proofs.insert(proofId, { id: proofId, verified: true });
+}
+

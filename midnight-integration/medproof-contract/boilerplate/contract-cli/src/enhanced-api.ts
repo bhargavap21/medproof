@@ -1,6 +1,6 @@
-// Enhanced API wrapper for Medproof Contract
-// Generated on: 2025-09-27T03:49:18.623Z
-// Auto-generated from medproof.compact
+// Enhanced API wrapper for Medproof-fixed Contract
+// Generated on: 2025-11-11T21:08:37.653Z
+// Auto-generated from medproof-fixed.compact
 
 import { type Logger } from 'pino';
 import { ContractAnalyzer } from './contract-analyzer.js';
@@ -99,87 +99,103 @@ export class EnhancedContractAPI {
     return await (originalApi as any).authorizeHospital(...args);
   }
   /**
-   * Execute aggregateResults function
-   */
-  async aggregateResults(...args: any[]): Promise<any> {
-    return await (originalApi as any).aggregateResults(...args);
-  }
-  /**
    * Execute getStudyStatus function
    */
   async getStudyStatus(...args: any[]): Promise<any> {
     return await (originalApi as any).getStudyStatus(...args);
   }
+  /**
+   * Execute getStudyCompliance function
+   */
+  async getStudyCompliance(...args: any[]): Promise<any> {
+    return await (originalApi as any).getStudyCompliance(...args);
+  }
+  /**
+   * Execute getTotalStudies function
+   */
+  async getTotalStudies(...args: any[]): Promise<any> {
+    return await (originalApi as any).getTotalStudies(...args);
+  }
+  /**
+   * Execute getVerifiedHospitals function
+   */
+  async getVerifiedHospitals(...args: any[]): Promise<any> {
+    return await (originalApi as any).getVerifiedHospitals(...args);
+  }
 }
 
 // Export contract metadata for reference
 export const CONTRACT_METADATA = {
-  name: 'Medproof Contract',
-  fileName: 'medproof.compact',
-  generatedAt: '2025-09-27T03:49:18.623Z',
+  name: 'Medproof-fixed Contract',
+  fileName: 'medproof-fixed.compact',
+  generatedAt: '2025-11-11T21:08:37.653Z',
   functions: [
   {
     "name": "submitMedicalProof",
     "parameters": [
       {
-        "name": "// Private inputs - never revealed on-chain\n  secret patientData",
-        "type": "MedicalStats"
+        "name": "studyId",
+        "type": "Bytes<32>"
       },
       {
-        "name": "// Public inputs - visible on-chain\n  public studyId",
-        "type": "Field"
+        "name": "hospitalId",
+        "type": "Bytes<32>"
       },
       {
-        "name": "public hospitalId",
-        "type": "Field"
+        "name": "privacyLevel",
+        "type": "Uint<8>"
       }
     ],
-    "returnType": "[]",
-    "readOnly": false
+    "returnType": "Bytes<32>",
+    "readOnly": true
   },
   {
     "name": "authorizeHospital",
     "parameters": [
       {
-        "name": "public hospitalId",
-        "type": "Field"
+        "name": "hospitalId",
+        "type": "Bytes<32>"
       },
       {
-        "name": "public authorizationProof",
-        "type": "Field"
+        "name": "authorizationProof",
+        "type": "Bytes<32>"
       }
     ],
     "returnType": "[]",
     "readOnly": false
   },
   {
-    "name": "aggregateResults",
-    "parameters": [
-      {
-        "name": "secret hospitalProofs",
-        "type": "Vector<Field"
-      },
-      {
-        "name": "// Up to 10 hospitals\n  secret hospitalData",
-        "type": "Vector<MedicalStats"
-      },
-      {
-        "name": "public studyType",
-        "type": "Field"
-      }
-    ],
-    "returnType": "[Field, Field]",
-    "readOnly": true
-  },
-  {
     "name": "getStudyStatus",
     "parameters": [
       {
-        "name": "public studyId",
-        "type": "Field"
+        "name": "studyId",
+        "type": "Bytes<32>"
       }
     ],
-    "returnType": "[Bool, Field]",
+    "returnType": "Uint<1>",
+    "readOnly": true
+  },
+  {
+    "name": "getStudyCompliance",
+    "parameters": [
+      {
+        "name": "studyId",
+        "type": "Bytes<32>"
+      }
+    ],
+    "returnType": "Uint<1>",
+    "readOnly": true
+  },
+  {
+    "name": "getTotalStudies",
+    "parameters": [],
+    "returnType": "Uint<64>",
+    "readOnly": true
+  },
+  {
+    "name": "getVerifiedHospitals",
+    "parameters": [],
+    "returnType": "Uint<64>",
     "readOnly": true
   }
 ],
@@ -194,7 +210,7 @@ export const CONTRACT_METADATA = {
   },
   {
     "name": "registeredProofs",
-    "type": "Map<Field, MedicalProof>"
+    "type": "Map<Bytes<32>, MedicalProof>"
   }
 ],
   witnesses: []

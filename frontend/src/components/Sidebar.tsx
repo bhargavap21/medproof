@@ -35,7 +35,7 @@ import {
   Logout,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
-import { useWeb3 } from '../hooks/useWeb3';
+import { useMidnight } from '../hooks/useMidnight';
 
 interface SidebarProps {
   open: boolean;
@@ -63,7 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile, signOut, hasRole } = useAuth();
-  const { isConnected, account, networkId } = useWeb3();
+  const { isConnected, walletAddress, networkId } = useMidnight();
   const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
 
   const toggleExpanded = (path: string) => {
@@ -201,7 +201,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
   };
 
   const getNetworkStatus = () => {
-    if (networkId === 1337) return { status: 'Connected', color: '#4caf50' };
+    if (networkId === 'testnet') return { status: 'Midnight Testnet', color: '#4caf50' };
+    if (networkId === 'mainnet') return { status: 'Midnight Mainnet', color: '#4caf50' };
     if (networkId) return { status: 'Wrong Network', color: '#ff9800' };
     return { status: 'Disconnected', color: '#f44336' };
   };
@@ -503,10 +504,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           </Box>
 
           {/* Wallet */}
-          {isConnected && account && open && (
+          {isConnected && walletAddress && open && (
             <Chip
               icon={<AccountBalanceWallet />}
-              label={`${account.slice(0, 6)}...${account.slice(-4)}`}
+              label={`${walletAddress.slice(0, 12)}...${walletAddress.slice(-8)}`}
               size="small"
               variant="outlined"
               color="primary"

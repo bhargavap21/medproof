@@ -194,7 +194,7 @@ export default function HospitalManagementDashboard() {
           }
         };
 
-        const response = await fetch(`http://localhost:8000/api/data-access-requests/${requestId}/approve`, {
+        const response = await fetch(`http://localhost:3001/api/data-access-requests/${requestId}/approve`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -215,7 +215,7 @@ export default function HospitalManagementDashboard() {
           reason: 'Rejected by hospital admin - does not meet current data sharing criteria'
         };
 
-        const response = await fetch(`http://localhost:8000/api/data-access-requests/${requestId}/reject`, {
+        const response = await fetch(`http://localhost:3001/api/data-access-requests/${requestId}/reject`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

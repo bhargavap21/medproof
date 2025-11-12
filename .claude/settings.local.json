@@ -60,7 +60,15 @@
       "Bash(PORT=3002 npm start)",
       "Bash(PORT=3003 node src/index.js)",
       "Bash(kill:*)",
-      "Bash(PORT=3000 npm start)"
+      "Bash(PORT=3000 npm start)",
+      "Bash(PORT=3001 node src/index.js)",
+      "Bash(cat:*)",
+      "Bash(for pkg in wallet midnight-js-contracts midnight-js-http-client-proof-provider midnight-js-indexer-public-data-provider midnight-js-level-private-state-provider midnight-js-network-id midnight-js-types ledger)",
+      "Bash(do echo \"=== $pkg ===\")",
+      "Bash(done)",
+      "Bash(timeout:*)",
+      "Bash(export:*)",
+      "Bash(compact compile:*)"
     ],
     "deny": [],
     "ask": []
