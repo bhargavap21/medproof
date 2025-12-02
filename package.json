@@ -4,23 +4,22 @@
   "description": "Privacy-Preserving Medical Research Platform using Zero-Knowledge Proofs",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && npm run dev",
-    "build": "npm run build:frontend && npm run build:backend",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:proof-service\"",
+    "dev:frontend": "cd frontend && npm start",
+    "dev:backend": "cd backend && PORT=3001 node src/index.js",
+    "dev:proof-service": "cd midnight-integration/medproof-contract && node proof-service.mjs",
+    "build": "npm run build:frontend",
     "build:frontend": "cd frontend && npm run build",
-    "build:backend": "cd backend && npm run build",
-    "compile:contracts": "cd contracts && npx hardhat compile",
-    "deploy:contracts": "cd contracts && npx hardhat run scripts/deploy.js --network localhost",
-    "test": "npm run test:contracts && npm run test:frontend && npm run test:backend",
-    "test:contracts": "cd contracts && npx hardhat test",
+    "compile:contract": "cd midnight-integration/medproof-contract && npm run compile",
+    "deploy:contract": "cd midnight-integration/medproof-contract && npm run deploy",
+    "test": "npm run test:frontend && npm run test:backend",
     "test:frontend": "cd frontend && npm test",
     "test:backend": "cd backend && npm test"
   },
   "workspaces": [
     "frontend",
     "backend",
-    "contracts"
+    "midnight-integration/medproof-contract"
   ],
   "devDependencies": {
     "concurrently": "^8.2.0"

@@ -1,6 +1,6 @@
-// Enhanced API wrapper for Medproof-fixed Contract
-// Generated on: 2025-11-11T21:08:37.653Z
-// Auto-generated from medproof-fixed.compact
+// Enhanced API wrapper for Medproof-mvp Contract
+// Generated on: 2025-12-02T06:47:12.138Z
+// Auto-generated from medproof-mvp.compact
 
 import { type Logger } from 'pino';
 import { ContractAnalyzer } from './contract-analyzer.js';
@@ -93,42 +93,18 @@ export class EnhancedContractAPI {
     return await (originalApi as any).submitMedicalProof(...args);
   }
   /**
-   * Execute authorizeHospital function
-   */
-  async authorizeHospital(...args: any[]): Promise<any> {
-    return await (originalApi as any).authorizeHospital(...args);
-  }
-  /**
-   * Execute getStudyStatus function
-   */
-  async getStudyStatus(...args: any[]): Promise<any> {
-    return await (originalApi as any).getStudyStatus(...args);
-  }
-  /**
-   * Execute getStudyCompliance function
-   */
-  async getStudyCompliance(...args: any[]): Promise<any> {
-    return await (originalApi as any).getStudyCompliance(...args);
-  }
-  /**
    * Execute getTotalStudies function
    */
   async getTotalStudies(...args: any[]): Promise<any> {
     return await (originalApi as any).getTotalStudies(...args);
   }
-  /**
-   * Execute getVerifiedHospitals function
-   */
-  async getVerifiedHospitals(...args: any[]): Promise<any> {
-    return await (originalApi as any).getVerifiedHospitals(...args);
-  }
 }
 
 // Export contract metadata for reference
 export const CONTRACT_METADATA = {
-  name: 'Medproof-fixed Contract',
-  fileName: 'medproof-fixed.compact',
-  generatedAt: '2025-11-11T21:08:37.653Z',
+  name: 'Medproof-mvp Contract',
+  fileName: 'medproof-mvp.compact',
+  generatedAt: '2025-12-02T06:47:12.138Z',
   functions: [
   {
     "name": "submitMedicalProof",
@@ -150,50 +126,7 @@ export const CONTRACT_METADATA = {
     "readOnly": true
   },
   {
-    "name": "authorizeHospital",
-    "parameters": [
-      {
-        "name": "hospitalId",
-        "type": "Bytes<32>"
-      },
-      {
-        "name": "authorizationProof",
-        "type": "Bytes<32>"
-      }
-    ],
-    "returnType": "[]",
-    "readOnly": false
-  },
-  {
-    "name": "getStudyStatus",
-    "parameters": [
-      {
-        "name": "studyId",
-        "type": "Bytes<32>"
-      }
-    ],
-    "returnType": "Uint<1>",
-    "readOnly": true
-  },
-  {
-    "name": "getStudyCompliance",
-    "parameters": [
-      {
-        "name": "studyId",
-        "type": "Bytes<32>"
-      }
-    ],
-    "returnType": "Uint<1>",
-    "readOnly": true
-  },
-  {
     "name": "getTotalStudies",
-    "parameters": [],
-    "returnType": "Uint<64>",
-    "readOnly": true
-  },
-  {
-    "name": "getVerifiedHospitals",
     "parameters": [],
     "returnType": "Uint<64>",
     "readOnly": true
@@ -202,10 +135,6 @@ export const CONTRACT_METADATA = {
   ledgerState: [
   {
     "name": "totalStudies",
-    "type": "Counter"
-  },
-  {
-    "name": "verifiedHospitals",
     "type": "Counter"
   },
   {

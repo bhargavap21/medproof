@@ -10,6 +10,7 @@
     "boilerplate/scripts"
   ],
   "scripts": {
+    "compile": "rm -rf boilerplate/contract/src/managed/* && node boilerplate/scripts/auto-generator.js",
     "dev": "rm -rf boilerplate/contract/src/managed/* && node boilerplate/scripts/auto-generator.js",
     "auto-generate-verbose": "node boilerplate/scripts/typescript-auto-generator.js --verbose",
     "build": "npm run build --workspaces --if-present",
@@ -17,7 +18,7 @@
     "wallet": "node boilerplate/scripts/generate-key.js",
     "faucet": "node boilerplate/scripts/request-faucet.js",
     "balance": "node boilerplate/scripts/check-balance.js",
-    "deploy": "node boilerplate/scripts/deploy.js --new",
+    "deploy": "node deploy-sdk-minimal.mjs",
     "deploy:new": "node boilerplate/scripts/deploy.js --new",
     "deploy:join": "node boilerplate/scripts/deploy.js --join",
     "docs": "open https://docs.midnight.network/develop/reference/compact/",
