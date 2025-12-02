@@ -106,7 +106,7 @@ async function initialize() {
 
     // Load contract directly
     console.log('\n📄 Loading contract...');
-    const contractPath = path.join(__dirname, 'boilerplate/contract/dist/managed/medproof/contract/index.cjs');
+    const contractPath = path.join(__dirname, 'boilerplate/contract/dist/managed/medproof-mvp/index.js');
     const contractModule = await import(contractPath);
 
     // Create witnesses manually for medproof contract
@@ -125,7 +125,7 @@ async function initialize() {
 
     // Setup providers
     const provider = await createProvider(wallet);
-    const zkConfigPath = path.join(__dirname, 'boilerplate/contract/src/managed/medproof');
+    const zkConfigPath = path.join(__dirname, 'boilerplate/contract/src/managed/medproof-mvp');
 
     const providers = {
       privateStateProvider: levelPrivateStateProvider({ privateStateStoreName: 'medproof-service' }),

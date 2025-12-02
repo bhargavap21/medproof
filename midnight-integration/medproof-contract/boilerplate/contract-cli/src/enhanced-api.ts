@@ -1,5 +1,5 @@
 // Enhanced API wrapper for Medproof-mvp Contract
-// Generated on: 2025-12-02T06:47:12.138Z
+// Generated on: 2025-12-02T07:08:04.944Z
 // Auto-generated from medproof-mvp.compact
 
 import { type Logger } from 'pino';
@@ -104,7 +104,7 @@ export class EnhancedContractAPI {
 export const CONTRACT_METADATA = {
   name: 'Medproof-mvp Contract',
   fileName: 'medproof-mvp.compact',
-  generatedAt: '2025-12-02T06:47:12.138Z',
+  generatedAt: '2025-12-02T07:08:04.944Z',
   functions: [
   {
     "name": "submitMedicalProof",
