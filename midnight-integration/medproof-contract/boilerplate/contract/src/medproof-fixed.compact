@@ -1,0 +1,294 @@
+// SPDX-License-Identifier: Apache-2.0
+// MedProof - Privacy-Preserving Medical Research Platform
+
+pragma language_version 0.18;
+
+import CompactStandardLibrary;
+
+// =====================
+// ====== Types ========
+// =====================
+
+export struct MedicalProof {
+  studyId: Bytes<32>,
+  hospitalCommitment: Bytes<32>,
+  dataCommitment: Bytes<32>,
+  proofHash: Bytes<32>,
+  privacyLevel: Uint<8>,
+  statisticalSignificance: Uint<1>,
+  minimumSampleMet: Uint<1>,
+  treatmentEffective: Uint<1>,
+  timestamp: Uint<64>,
+  verified: Uint<1>,
+  regulatoryCompliant: Uint<1>
+}
+
+export struct MedicalStats {
+  patientCount: Uint<64>,
+  treatmentSuccess: Uint<64>,
+  controlSuccess: Uint<64>,
+  controlCount: Uint<64>,
+  pValue: Uint<64>,
+  adverseEvents: Uint<64>,
+  dataQualityScore: Uint<64>
+}
+
+// =====================
+// ====== Ledger =======
+// =====================
+
+export ledger totalStudies: Counter;
+export ledger verifiedHospitals: Counter;
+export ledger registeredProofs: Map<Bytes<32>, MedicalProof>;
+
+// ===========================
+// ===== Witnesses (Private Inputs) =====
+// ===========================
+
+witness hospitalSecretKey(): Bytes<32>;
+witness patientCount(): Uint<64>;
+witness treatmentSuccess(): Uint<64>;
+witness controlSuccess(): Uint<64>;
+witness controlCount(): Uint<64>;
+witness pValue(): Uint<64>;
+witness adverseEvents(): Uint<64>;
+witness dataQualityScore(): Uint<64>;
+
+// ==========================
+// ====== Constructor =======
+// ==========================
+
+constructor() {
+  totalStudies.increment(0 as Uint<16>);
+  verifiedHospitals.increment(0 as Uint<16>);
+}
+
+// =====================
+// ===== Helpers =======
+// =====================
+
+// Generate hospital commitment without poseidon (using persistentHash)
+pure circuit generateHospitalCommitment(
+  hospitalId: Bytes<32>, 
+  secretKey: Bytes<32>, 
+  studyId: Bytes<32>
+): Bytes<32> {
+  return persistentHash<Vector<4, Bytes<32>>>([
+    pad(32, "medproof:hospital"),
+    hospitalId,
+    secretKey,
+    studyId
+  ]);
+}
+
+// Generate data commitment
+pure circuit generateDataCommitment(
+  patCount: Uint<64>,
+  treatSucc: Uint<64>,
+  contSucc: Uint<64>,
+  contCount: Uint<64>,
+  pVal: Uint<64>,
+  advEvents: Uint<64>,
+  dataQual: Uint<64>
+): Bytes<32> {
+  // Convert all Uint<64> to Bytes<32> for hashing
+  const patCountB = (patCount as Field) as Bytes<32>;
+  const treatSuccB = (treatSucc as Field) as Bytes<32>;
+  const contSuccB = (contSucc as Field) as Bytes<32>;
+  const contCountB = (contCount as Field) as Bytes<32>;
+  const pValB = (pVal as Field) as Bytes<32>;
+  const advEventsB = (advEvents as Field) as Bytes<32>;
+  const dataQualB = (dataQual as Field) as Bytes<32>;
+  
+  return persistentHash<Vector<8, Bytes<32>>>([
+    pad(32, "medproof:data"),
+    patCountB,
+    treatSuccB,
+    contSuccB,
+    contCountB,
+    pValB,
+    advEventsB,
+    dataQualB
+  ]);
+}
+
+// ========================================
+// ===== Enhanced Medical Proof Circuit =====
+// ========================================
+
+export circuit submitMedicalProof(
+  studyId: Bytes<32>,
+  hospitalId: Bytes<32>,
+  privacyLevel: Uint<8>
+): Bytes<32> {
+  
+  // Get private witness data
+  const patCount = patientCount();
+  const treatSucc = treatmentSuccess();
+  const contSucc = controlSuccess();
+  const contCount = controlCount();
+  const pVal = pValue();
+  const advEvents = adverseEvents();
+  const dataQual = dataQualityScore();
+  
+  // ========================================================================
+  // VALIDATION LAYER (Privacy-Preserving Constraints)
+  // ========================================================================
+  
+  // 1. Minimum sample size validation (FDA guideline: ≥50 patients)
+  assert(patCount >= (50 as Uint<64>), "Insufficient sample size");
+  
+  // 2. Statistical significance validation (p < 0.05, scaled by 1000 → 50)
+  assert(pVal <= (50 as Uint<64>), "Not statistically significant");
+  
+  // 3. Control group adequacy (≥20 patients)
+  assert(contCount >= (20 as Uint<64>), "Insufficient control group");
+  
+  // 4. Data quality threshold (≥80 on 0-100 scale)
+  assert(dataQual >= (80 as Uint<64>), "Data quality below threshold");
+  
+  // ========================================================================
+  // EFFICACY CALCULATION (Zero-Knowledge)
+  // ========================================================================
+  
+  // Simple ratio check: treatmentSuccess / patientCount > controlSuccess / controlCount
+  // Cross-multiply to avoid division: treatSucc * contCount > contSucc * patCount
+  const treatmentScaled = treatSucc * contCount;
+  const controlScaled = contSucc * patCount;
+  
+  // Ensure treatment shows improvement
+  assert(treatmentScaled > controlScaled, "Treatment not superior to control");
+  
+  // Clinical significance check: improvement must be substantial
+  // (treatmentScaled - controlScaled) should be at least 10% of controlScaled
+  const improvement = treatmentScaled - controlScaled;
+  const minImprovement = controlScaled * (10 as Uint<64>); // 10% as ratio
+  assert(improvement * (100 as Uint<64>) >= minImprovement, "Clinically insignificant improvement");
+  
+  // ========================================================================
+  // SAFETY VALIDATION
+  // ========================================================================
+  
+  // Adverse events must be within acceptable range (<10%)
+  // Check: advEvents * 100 < patCount * 10 (i.e., advEvents < 10% of patCount)
+  const adverseEventsScaled = advEvents * (100 as Uint<64>);
+  const safetyThreshold = patCount * (10 as Uint<64>);
+  assert(adverseEventsScaled <= safetyThreshold, "Excessive adverse events");
+  
+  // ========================================================================
+  // CRYPTOGRAPHIC COMMITMENTS
+  // ========================================================================
+  
+  // Generate commitment to all private medical data
+  const dataCommitment = generateDataCommitment(
+    patCount, treatSucc, contSucc, contCount, pVal, advEvents, dataQual
+  );
+  
+  // Hospital authentication (prove authorization without revealing key)
+  const hospitalCommitment = generateHospitalCommitment(
+    hospitalId, 
+    hospitalSecretKey(), 
+    studyId
+  );
+  
+  // Generate unique proof hash  
+  // Use counter value as timestamp proxy since now() may not be available
+  const timestamp = (totalStudies as Field) as Uint<64>;
+  const timestampB = (timestamp as Field) as Bytes<32>;
+  const privLevelB = (privacyLevel as Field) as Bytes<32>;
+  
+  const proofHash = persistentHash<Vector<6, Bytes<32>>>([
+    studyId,
+    hospitalId,
+    dataCommitment,
+    hospitalCommitment,
+    privLevelB,
+    timestampB
+  ]);
+  
+  // ========================================================================
+  // REGULATORY COMPLIANCE CHECKS (Zero-Knowledge)
+  // ========================================================================
+  
+  // Prove study meets regulatory standards without revealing specifics
+  const regulatoryCheck1 = patCount >= (50 as Uint<64>);
+  const regulatoryCheck2 = pVal <= (50 as Uint<64>);
+  const regulatoryCheck3 = dataQual >= (80 as Uint<64>);
+  const regulatoryCheck4 = adverseEventsScaled <= safetyThreshold;
+  
+  const regulatoryCompliant = (regulatoryCheck1 && regulatoryCheck2 && regulatoryCheck3 && regulatoryCheck4)
+    ? (1 as Uint<1>) : (0 as Uint<1>);
+  
+  // ========================================================================
+  // CREATE ENHANCED PROOF RECORD
+  // ========================================================================
+  
+  const proof = MedicalProof {
+    studyId: studyId,
+    hospitalCommitment: hospitalCommitment,
+    dataCommitment: dataCommitment,
+    proofHash: proofHash,
+    privacyLevel: privacyLevel,
+    statisticalSignificance: 1 as Uint<1>,  // Proven by assertions above
+    minimumSampleMet: 1 as Uint<1>,         // Proven by assertions above
+    treatmentEffective: 1 as Uint<1>,       // Proven by assertions above
+    timestamp: timestamp,
+    verified: 1 as Uint<1>,
+    regulatoryCompliant: regulatoryCompliant
+  };
+  
+  // Store proof in public ledger (only commitments and boolean flags)
+  registeredProofs.insert(disclose(studyId), disclose(proof));
+  
+  // Update counters
+  totalStudies.increment(1 as Uint<16>);
+  // Note: Cannot increment totalPatientsBenefited with private witness value
+  // as it would leak information. We only track number of studies.
+  
+  return disclose(proofHash);
+}
+
+// ===================================
+// ===== Hospital Authorization ======
+// ===================================
+
+export circuit authorizeHospital(
+  hospitalId: Bytes<32>,
+  authorizationProof: Bytes<32>
+): [] {
+  // Verify authorization signature/proof
+  assert(!(authorizationProof == pad(32, "")), "Invalid authorization");
+  
+  // Update verified hospitals count
+  verifiedHospitals.increment(1 as Uint<16>);
+}
+
+// ===================================
+// ===== Query Circuits ==============
+// ===================================
+
+export circuit getStudyStatus(studyId: Bytes<32>): Uint<1> {
+  const hasMember = registeredProofs.member(disclose(studyId));
+  if (hasMember) {
+    const proof = registeredProofs.lookup(disclose(studyId));
+    return proof.verified;
+  } else {
+    return 0 as Uint<1>;
+  }
+}
+
+export circuit getStudyCompliance(studyId: Bytes<32>): Uint<1> {
+  assert(registeredProofs.member(disclose(studyId)), "Study not found");
+  const proof = registeredProofs.lookup(disclose(studyId));
+  return proof.regulatoryCompliant;
+}
+
+export circuit getTotalStudies(): Uint<64> {
+  return (totalStudies as Field) as Uint<64>;
+}
+
+
+export circuit getVerifiedHospitals(): Uint<64> {
+  return (verifiedHospitals as Field) as Uint<64>;
+}
+

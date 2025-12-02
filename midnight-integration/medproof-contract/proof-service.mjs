@@ -104,21 +104,15 @@ async function initialize() {
     console.log(`✅ Wallet synced: ${state.address}`);
     console.log(`   Balance: ${state.balances['0'] ?? 0n} tDUST`);
 
-    // Load contract directly
+    // Load contract directly (from compiled artifacts in src/managed)
     console.log('\n📄 Loading contract...');
-    const contractPath = path.join(__dirname, 'boilerplate/contract/dist/managed/medproof-mvp/index.js');
+    const contractPath = path.join(__dirname, 'boilerplate/contract/src/managed/medproof-mvp/contract/index.cjs');
     const contractModule = await import(contractPath);
 
-    // Create witnesses manually for medproof contract
+    // Create witnesses manually for medproof MVP contract (only 2 witnesses)
     const witnesses = {
-      hospitalSecretKey: ({ privateState }) => [privateState, privateState.hospitalSecretKey],
       patientCount: ({ privateState }) => [privateState, privateState.patientCount],
       treatmentSuccess: ({ privateState }) => [privateState, privateState.treatmentSuccess],
-      controlSuccess: ({ privateState }) => [privateState, privateState.controlSuccess],
-      controlCount: ({ privateState }) => [privateState, privateState.controlCount],
-      pValue: ({ privateState }) => [privateState, privateState.pValue],
-      adverseEvents: ({ privateState }) => [privateState, privateState.adverseEvents],
-      dataQualityScore: ({ privateState }) => [privateState, privateState.dataQualityScore],
     };
 
     const contractInstance = new contractModule.Contract(witnesses);
@@ -138,16 +132,10 @@ async function initialize() {
 
     console.log('\n🔗 Connecting to deployed contract...');
 
-    // Update private state with actual proof data for witnesses
+    // Update private state with actual proof data for witnesses (MVP only)
     const initialPrivateState = {
-      hospitalSecretKey: new Uint8Array(32).fill(1),
       patientCount: 100n,
-      treatmentSuccess: 75n,
-      controlSuccess: 50n,
-      controlCount: 100n,
-      pValue: 10n,  // 0.01 * 1000
-      adverseEvents: 5n,
-      dataQualityScore: 95n
+      treatmentSuccess: 75n
     };
 
     contract = await findDeployedContract(providers, {
