@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "index.cjs",
+  "sourceRoot": "../../../",
+  "sources": ["medproof-mvp.compact", "compiler/standard-library.compact"],
+  "names": [],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAqCA;;;;;;;;;;;;;;;;MAQA,AAAA,kBAiDC;;;;;cAhDC,SAAkB;cAClB,YAAqB;cACrB,cAAqB;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;yCAFrB,SAAkB,+BAClB,YAAqB,+BACrB,cAAqB;;;;;;;;;oDAFrB,SAAkB;oDAClB,YAAqB;oDACrB,cAAqB;;;OA8CtB;MAMD,AAAA,eAEC;;;;;;;;;;;;;;;;;;;;;;OAAA;;;;;;GA/DA;EAFD;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAdA;;;;;;;;;uDAAoC;IACpC;;;;;;;;;;uDAA6D;UAc3D,KAAY;IAAZ;;;;;;;;;;2EAAA,KAAY;;;;sDAAA;;;;;;;GACb;ECSD,AAAA,kBAAiC;oEAAA;;;EDlBjC,AAAA,eAAiC;;0DAAjC,YAAiC;;;;;;;;;;;;;;GAAA;EACjC,AAAA,mBAAqC;;0DAArC,gBAAqC;;;;;;;;;;;;;;GAAA;EAcrC,AAAA,qBAiDC;;wBAhDC,SAAkB;wBAClB,YAAqB;wBACrB,cAAqB;;UAIf,UAAyB;UACzB,WAA8B;4BAG7B,UAAQ;UAGT,WAA4C;6DAA/B,UAAQ;;UACrB,YAA8C;8DAAhC,WAAS;;UAEvB,gBAIJ;qDAFA,WAAS;qDACT,YAAU;UAIN,WAA+C;;;;;mDAAlC;;;;;;;;;;;sGAAY;UACzB,YAA8C;8DAAhC,WAAS;;UAEvB,WAIJ,2BAHA,SAAO;gDACP,gBAAc;gDACd,YAAU;UAIN,OAML,cALU,SAAO;sCACA,gBAAc;iCACnB,WAAS;iCACT,WAAS;;IAKtB;;;;;;;;;;yGAAiC,SAAO;;;yGAAY,OAAK;;;sDAAzC;UAGhB,KAAY;IAAZ;;;;;;;;;;2EAAA,KAAY;;;;sDAAA;WAEI,WAAS;GAC1B;EAMD,AAAA,kBAEC;;;;;;sCADS;;;;;;;;;;;yFAAY;GACrB;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IA/ED;qCAAA;;;;;;;;;;;wFAAoC;KAAA;IACpC;;;;;uCAAA;;;;;;;;;;;;;;;;0FAA6D;;;;;;uCAA7D;;;;;;;;;;;;0FAA6D;;;;;;;;;;;;;;uCAA7D;;;;;;;;;;;;;;;0FAA6D;;;;;;;;;;;;;;uCAA7D;;;;;;;;;;;;;;;;;0FAA6D;;;;;;;;;KAAA;;;;;;;;;;;;;;;;"
+}

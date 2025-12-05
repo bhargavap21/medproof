@@ -40,14 +40,14 @@ import {
 } from '@mui/icons-material';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAPI } from '../hooks/useAPI';
-import { useWeb3 } from '../hooks/useWeb3';
+import { useMidnight } from '../hooks/useMidnight';
 import ZKProofDisplay from '../components/ZKProofDisplay';
 
 const HospitalDashboard: React.FC = () => {
   const { hospitalId } = useParams<{ hospitalId: string }>();
   const navigate = useNavigate();
   const { hospitals, error, generateCohort, generateProof, connectToFHIR } = useAPI();
-  const { isConnected, submitProof, isHospitalAuthorized } = useWeb3();
+  const { isConnected, submitProof } = useMidnight();
   
   const [hospital, setHospital] = useState<any>(null);
   const [studyData, setStudyData] = useState<any>(null);
@@ -148,11 +148,10 @@ const HospitalDashboard: React.FC = () => {
     try {
       const proofData = {
         proofHash: zkProof.metadata.proofHash || `proof_${Date.now()}`,
-        studyType: 'treatment-efficacy',
-        condition: condition,
-        sampleSize: zkProof.metadata.sampleSize,
-        effectiveness: zkProof.metadata.efficacyRate,
-        zkProof: zkProof
+        studyId: `study_${hospitalId}_${Date.now()}`,
+        hospitalId: hospitalId,
+        privacyLevel: 2, // Default privacy level
+        proof: zkProof
       };
 
       const result = await submitProof(proofData);
@@ -489,18 +488,18 @@ const HospitalDashboard: React.FC = () => {
                     <strong>Connect Wallet to Submit Proof</strong>
                   </Typography>
                   <Typography variant="body2">
-                    Connect your MetaMask wallet to submit this proof to the blockchain and make it publicly verifiable.
+                    Connect your Lace wallet to submit this proof to the Midnight Network blockchain and make it publicly verifiable.
                   </Typography>
                 </Alert>
               )}
 
-              {isConnected && !isHospitalAuthorized(hospitalId || '') && (
-                <Alert severity="warning" sx={{ m: 3, mb: 2 }}>
+              {isConnected && (
+                <Alert severity="info" sx={{ m: 3, mb: 2 }}>
                   <Typography variant="subtitle1" gutterBottom>
-                    <strong>Wallet Not Authorized</strong>
+                    <strong>🌙 Connected to Midnight Network</strong>
                   </Typography>
                   <Typography variant="body2">
-                    Your wallet address is not authorized for this hospital. Please connect with an authorized address to submit proofs.
+                    Your Lace wallet is connected. You can submit proofs to the Midnight Network blockchain.
                   </Typography>
                 </Alert>
               )}
@@ -546,7 +545,7 @@ const HospitalDashboard: React.FC = () => {
             <Button 
               variant="contained"
               onClick={handleSubmitToBlockchain}
-              disabled={!isConnected || isGenerating || !isHospitalAuthorized(hospitalId || '')}
+              disabled={!isConnected || isGenerating}
               startIcon={<Security />}
               size="large"
               sx={{ minWidth: 200 }}

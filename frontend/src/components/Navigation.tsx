@@ -24,13 +24,14 @@ import {
   AdminPanelSettings,
   Logout,
 } from '@mui/icons-material';
-import { useWeb3 } from '../hooks/useWeb3';
+import { useMidnight } from '../hooks/useMidnight';
 import { useAuth } from '../hooks/useAuth';
+import LaceWalletButton from './wallet/LaceWalletButton';
 
 const Navigation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isConnected, account, connectWallet, disconnectWallet, networkId, loading } = useWeb3();
+  const { isConnected, walletAddress, networkId } = useMidnight();
   const { user, profile, signOut, hasRole } = useAuth();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [profileMenuAnchor, setProfileMenuAnchor] = React.useState<null | HTMLElement>(null);
@@ -130,62 +131,31 @@ const Navigation: React.FC = () => {
             ))}
           </Box>
 
-          {/* Blockchain Status */}
+          {/* Midnight Network Status */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', mr: 2 }}>
             <Box
               sx={{
                 width: 8,
                 height: 8,
-                bgcolor: networkId === 1337 ? '#4caf50' : networkId ? '#ff9800' : '#9e9e9e',
+                bgcolor: networkId === 'testnet' ? '#4caf50' : networkId ? '#ff9800' : '#9e9e9e',
                 borderRadius: '50%',
                 mr: 1,
               }}
             />
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-              {networkId === 1337 ? 'Hardhat Network' : networkId ? 'Wrong Network' : 'Web3 Offline'}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem' }}>
+                🌙
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                {networkId === 'testnet' ? 'Midnight Testnet' : networkId ? 'Wrong Network' : 'Midnight Offline'}
+              </Typography>
+            </Box>
           </Box>
 
           {/* User Profile Menu */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
-            {/* Wallet Connection */}
-            {isConnected && account ? (
-              <Tooltip title={account}>
-                <Chip
-                  icon={<AccountBalanceWallet />}
-                  label={`${account.slice(0, 6)}...${account.slice(-4)}`}
-                  onClick={disconnectWallet}
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    color: 'rgba(255,255,255,0.8)',
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    '&:hover': {
-                      borderColor: 'rgba(255,255,255,0.5)',
-                      bgcolor: 'rgba(255,255,255,0.1)',
-                    },
-                  }}
-                />
-              </Tooltip>
-            ) : (
-              <Button
-                variant="outlined"
-                startIcon={<LinkIcon />}
-                onClick={connectWallet}
-                disabled={loading}
-                size="small"
-                sx={{
-                  color: 'rgba(255,255,255,0.8)',
-                  borderColor: 'rgba(255,255,255,0.3)',
-                  '&:hover': {
-                    borderColor: 'rgba(255,255,255,0.5)',
-                    bgcolor: 'rgba(255,255,255,0.1)',
-                  },
-                }}
-              >
-                {loading ? 'Connecting...' : 'Connect Wallet'}
-              </Button>
-            )}
+            {/* Lace Wallet Connection */}
+            <LaceWalletButton />
 
             {/* User Profile */}
             <Box sx={{ display: 'flex', alignItems: 'center' }}>

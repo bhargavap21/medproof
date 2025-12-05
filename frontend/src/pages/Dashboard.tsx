@@ -42,6 +42,7 @@ import {
 } from '@mui/icons-material';
 import { useAPI } from '../hooks/useAPI';
 import { useAuth } from '../hooks/useAuth';
+import MidnightNetworkStatus from '../components/MidnightNetworkStatus';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -221,35 +222,37 @@ const Dashboard: React.FC = () => {
         <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
           Privacy-preserving medical research collaboration platform
         </Typography>
-
-
-        {/* Welcome User Section */}
-        {user && (
-          <Card sx={{ maxWidth: 500, mx: 'auto', mb: 4, background: 'linear-gradient(135deg, #1c2128 0%, #252d38 100%)', color: '#f0f6fc', border: '1px solid #30363d' }}>
-            <CardContent sx={{ py: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-                <Avatar sx={{ width: 50, height: 50, bgcolor: 'rgba(255,255,255,0.2)' }}>
-                  {profile?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
-                </Avatar>
-                <Box sx={{ textAlign: 'left' }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Welcome, {profile?.first_name || user?.email?.split('@')[0]}!
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    {profile?.role?.replace('_', ' ') || 'Researcher'}
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        )}
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
       </Box>
+
+      {/* Midnight Network Status Widget - Prominently Displayed */}
+      <MidnightNetworkStatus autoRefresh={true} refreshInterval={10000} />
+
+      {/* Welcome User Section */}
+      {user && (
+        <Card sx={{ maxWidth: 500, mx: 'auto', mb: 4, background: 'linear-gradient(135deg, #1c2128 0%, #252d38 100%)', color: '#f0f6fc', border: '1px solid #30363d' }}>
+          <CardContent sx={{ py: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+              <Avatar sx={{ width: 50, height: 50, bgcolor: 'rgba(255,255,255,0.2)' }}>
+                {profile?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+              </Avatar>
+              <Box sx={{ textAlign: 'left' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Welcome, {profile?.first_name || user?.email?.split('@')[0]}!
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {profile?.role?.replace('_', ' ') || 'Researcher'}
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       {/* Overview Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>

@@ -25,7 +25,7 @@ import StudyMarketplace from './components/hospital-admin/StudyMarketplace';
 import HospitalNetwork from './pages/HospitalNetwork';
 import AuthWrapper from './components/auth/AuthWrapper';
 import { APIProvider } from './hooks/useAPI';
-import { Web3Provider } from './hooks/useWeb3';
+import { MidnightProvider } from './hooks/useMidnight';
 import { AuthProvider } from './hooks/useAuth';
 
 // Lazy load study request components to avoid circular dependency issues
@@ -59,7 +59,7 @@ function App() {
 
   return (
     <AuthProvider>
-      <Web3Provider>
+      <MidnightProvider>
         <APIProvider>
           <Routes>
             {/* Landing Page - No Auth Required */}
@@ -107,7 +107,7 @@ function App() {
             } />
           </Routes>
         </APIProvider>
-      </Web3Provider>
+      </MidnightProvider>
     </AuthProvider>
   );
 }

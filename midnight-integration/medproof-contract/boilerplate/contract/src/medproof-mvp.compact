@@ -1,0 +1,103 @@
+// SPDX-License-Identifier: Apache-2.0
+// MedProof MVP - Simplified Circuit for Testing
+
+pragma language_version 0.18;
+
+import CompactStandardLibrary;
+
+// =====================
+// ====== Types ========
+// =====================
+
+export struct MedicalProof {
+  studyId: Bytes<32>,
+  dataCommitment: Bytes<32>,
+  proofHash: Bytes<32>,
+  timestamp: Uint<64>,
+  verified: Uint<1>
+}
+
+// =====================
+// ====== Ledger =======
+// =====================
+
+export ledger totalStudies: Counter;
+export ledger registeredProofs: Map<Bytes<32>, MedicalProof>;
+
+// ===========================
+// ===== Witnesses (Private Inputs) =====
+// ===========================
+
+witness patientCount(): Uint<64>;
+witness treatmentSuccess(): Uint<64>;
+
+// ==========================
+// ====== Constructor =======
+// ==========================
+
+constructor() {
+  totalStudies.increment(0 as Uint<16>);
+}
+
+// =====================
+// ===== MVP Circuit ===
+// =====================
+
+export circuit submitMedicalProof(
+  studyId: Bytes<32>,
+  hospitalId: Bytes<32>,
+  privacyLevel: Uint<8>
+): Bytes<32> {
+
+  // Get private witness data
+  const patCount = patientCount();
+  const treatSucc = treatmentSuccess();
+
+  // CORE VALIDATION: Minimum sample size only
+  assert(patCount >= (50 as Uint<64>), "Insufficient sample size");
+
+  // Simple data commitment (just hash the two values)
+  const patCountB = (patCount as Field) as Bytes<32>;
+  const treatSuccB = (treatSucc as Field) as Bytes<32>;
+
+  const dataCommitment = persistentHash<Vector<3, Bytes<32>>>([
+    pad(32, "medproof:mvp"),
+    patCountB,
+    treatSuccB
+  ]);
+
+  // Generate simple proof hash
+  const timestamp = (totalStudies as Field) as Uint<64>;
+  const timestampB = (timestamp as Field) as Bytes<32>;
+
+  const proofHash = persistentHash<Vector<3, Bytes<32>>>([
+    studyId,
+    dataCommitment,
+    timestampB
+  ]);
+
+  // Create minimal proof record
+  const proof = MedicalProof {
+    studyId: studyId,
+    dataCommitment: dataCommitment,
+    proofHash: proofHash,
+    timestamp: timestamp,
+    verified: 1 as Uint<1>
+  };
+
+  // Store proof in ledger
+  registeredProofs.insert(disclose(studyId), disclose(proof));
+
+  // Update counter
+  totalStudies.increment(1 as Uint<16>);
+
+  return disclose(proofHash);
+}
+
+// ===================================
+// ===== Query Circuits ==============
+// ===================================
+
+export circuit getTotalStudies(): Uint<64> {
+  return (totalStudies as Field) as Uint<64>;
+}

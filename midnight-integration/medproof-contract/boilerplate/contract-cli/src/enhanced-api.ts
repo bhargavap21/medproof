@@ -1,6 +1,6 @@
-// Enhanced API wrapper for Medproof Contract
-// Generated on: 2025-09-27T03:49:18.623Z
-// Auto-generated from medproof.compact
+// Enhanced API wrapper for Medproof-mvp Contract
+// Generated on: 2025-12-02T07:08:04.944Z
+// Auto-generated from medproof-mvp.compact
 
 import { type Logger } from 'pino';
 import { ContractAnalyzer } from './contract-analyzer.js';
@@ -93,93 +93,42 @@ export class EnhancedContractAPI {
     return await (originalApi as any).submitMedicalProof(...args);
   }
   /**
-   * Execute authorizeHospital function
+   * Execute getTotalStudies function
    */
-  async authorizeHospital(...args: any[]): Promise<any> {
-    return await (originalApi as any).authorizeHospital(...args);
-  }
-  /**
-   * Execute aggregateResults function
-   */
-  async aggregateResults(...args: any[]): Promise<any> {
-    return await (originalApi as any).aggregateResults(...args);
-  }
-  /**
-   * Execute getStudyStatus function
-   */
-  async getStudyStatus(...args: any[]): Promise<any> {
-    return await (originalApi as any).getStudyStatus(...args);
+  async getTotalStudies(...args: any[]): Promise<any> {
+    return await (originalApi as any).getTotalStudies(...args);
   }
 }
 
 // Export contract metadata for reference
 export const CONTRACT_METADATA = {
-  name: 'Medproof Contract',
-  fileName: 'medproof.compact',
-  generatedAt: '2025-09-27T03:49:18.623Z',
+  name: 'Medproof-mvp Contract',
+  fileName: 'medproof-mvp.compact',
+  generatedAt: '2025-12-02T07:08:04.944Z',
   functions: [
   {
     "name": "submitMedicalProof",
     "parameters": [
       {
-        "name": "// Private inputs - never revealed on-chain\n  secret patientData",
-        "type": "MedicalStats"
+        "name": "studyId",
+        "type": "Bytes<32>"
       },
       {
-        "name": "// Public inputs - visible on-chain\n  public studyId",
-        "type": "Field"
+        "name": "hospitalId",
+        "type": "Bytes<32>"
       },
       {
-        "name": "public hospitalId",
-        "type": "Field"
+        "name": "privacyLevel",
+        "type": "Uint<8>"
       }
     ],
-    "returnType": "[]",
-    "readOnly": false
-  },
-  {
-    "name": "authorizeHospital",
-    "parameters": [
-      {
-        "name": "public hospitalId",
-        "type": "Field"
-      },
-      {
-        "name": "public authorizationProof",
-        "type": "Field"
-      }
-    ],
-    "returnType": "[]",
-    "readOnly": false
-  },
-  {
-    "name": "aggregateResults",
-    "parameters": [
-      {
-        "name": "secret hospitalProofs",
-        "type": "Vector<Field"
-      },
-      {
-        "name": "// Up to 10 hospitals\n  secret hospitalData",
-        "type": "Vector<MedicalStats"
-      },
-      {
-        "name": "public studyType",
-        "type": "Field"
-      }
-    ],
-    "returnType": "[Field, Field]",
+    "returnType": "Bytes<32>",
     "readOnly": true
   },
   {
-    "name": "getStudyStatus",
-    "parameters": [
-      {
-        "name": "public studyId",
-        "type": "Field"
-      }
-    ],
-    "returnType": "[Bool, Field]",
+    "name": "getTotalStudies",
+    "parameters": [],
+    "returnType": "Uint<64>",
     "readOnly": true
   }
 ],
@@ -189,12 +138,8 @@ export const CONTRACT_METADATA = {
     "type": "Counter"
   },
   {
-    "name": "verifiedHospitals",
-    "type": "Counter"
-  },
-  {
     "name": "registeredProofs",
-    "type": "Map<Field, MedicalProof>"
+    "type": "Map<Bytes<32>, MedicalProof>"
   }
 ],
   witnesses: []
