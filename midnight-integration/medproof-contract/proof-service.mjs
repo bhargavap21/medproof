@@ -106,26 +106,20 @@ async function initialize() {
 
     // Load contract directly (from compiled artifacts in src/managed)
     console.log('\n📄 Loading contract...');
-    const contractPath = path.join(__dirname, 'boilerplate/contract/src/managed/medproof-fixed/contract/index.cjs');
+    const contractPath = path.join(__dirname, 'boilerplate/contract/src/managed/medproof-mvp/contract/index.cjs');
     const contractModule = await import(contractPath);
 
-    // Create witnesses manually for medproof-fixed contract (all 8 witnesses)
+    // Create witnesses manually for medproof-mvp contract (only 2 witnesses)
     const witnesses = {
-      hospitalSecretKey: ({ privateState }) => [privateState, privateState.hospitalSecretKey],
       patientCount: ({ privateState }) => [privateState, privateState.patientCount],
       treatmentSuccess: ({ privateState }) => [privateState, privateState.treatmentSuccess],
-      controlSuccess: ({ privateState }) => [privateState, privateState.controlSuccess],
-      controlCount: ({ privateState }) => [privateState, privateState.controlCount],
-      pValue: ({ privateState }) => [privateState, privateState.pValue],
-      adverseEvents: ({ privateState }) => [privateState, privateState.adverseEvents],
-      dataQualityScore: ({ privateState }) => [privateState, privateState.dataQualityScore],
     };
 
     const contractInstance = new contractModule.Contract(witnesses);
 
     // Setup providers
     const provider = await createProvider(wallet);
-    const zkConfigPath = path.join(__dirname, 'boilerplate/contract/src/managed/medproof-fixed');
+    const zkConfigPath = path.join(__dirname, 'boilerplate/contract/src/managed/medproof-mvp');
 
     const providers = {
       privateStateProvider: levelPrivateStateProvider({ privateStateStoreName: 'medproof-service' }),
@@ -138,16 +132,10 @@ async function initialize() {
 
     console.log('\n🔗 Connecting to deployed contract...');
 
-    // Update private state with actual proof data for witnesses (all 8 witnesses)
+    // Update private state with actual proof data for witnesses (MVP - only 2 witnesses)
     const initialPrivateState = {
-      hospitalSecretKey: new Uint8Array(32).fill(1),
       patientCount: 100n,
-      treatmentSuccess: 75n,
-      controlSuccess: 50n,
-      controlCount: 100n,
-      pValue: 10n,  // 0.01 * 1000
-      adverseEvents: 5n,
-      dataQualityScore: 95n
+      treatmentSuccess: 75n
     };
 
     contract = await findDeployedContract(providers, {
@@ -178,7 +166,16 @@ app.post('/submit-proof', async (req, res) => {
   }
 
   try {
+    console.log('\n📥 Received request body:', JSON.stringify(req.body, null, 2));
+
     const { privateData, publicMetadata } = req.body;
+
+    if (!privateData) {
+      throw new Error('privateData is missing from request');
+    }
+    if (!publicMetadata) {
+      throw new Error('publicMetadata is missing from request');
+    }
 
     console.log('\n🔒 SUBMITTING REAL PROOF TO MIDNIGHT NETWORK');
     console.log('Patient count:', privateData.patientCount);
@@ -194,21 +191,37 @@ app.post('/submit-proof', async (req, res) => {
     studyIdBytes.set(studyIdEncoded.slice(0, 32));
     hospitalIdBytes.set(hospitalIdEncoded.slice(0, 32));
 
+    // Convert privacyLevel to number if it's a string
+    let privacyLevelNum = publicMetadata.privacyLevel || 2;
+    if (typeof privacyLevelNum === 'string') {
+      // Map string levels to numbers
+      const levelMap = { 'low': 1, 'medium': 2, 'high': 3 };
+      privacyLevelNum = levelMap[privacyLevelNum.toLowerCase()] || 2;
+    }
+
     const result = await contract.callTx.submitMedicalProof(
       studyIdBytes,
       hospitalIdBytes,
-      BigInt(publicMetadata.privacyLevel || 2)
+      BigInt(privacyLevelNum)
     );
 
     console.log('✅ REAL TRANSACTION SUBMITTED!');
+    console.log('Transaction result:', result);
+
+    // Convert BigInt values to strings for JSON serialization
+    const serializableResult = JSON.parse(JSON.stringify(result, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    ));
 
     res.json({
       success: true,
       realTransaction: true,
       simulation: false,
-      result,
+      transactionHash: serializableResult?.transactionHash || 'pending',
+      proofHash: serializableResult?.proofHash || serializableResult?.public?.contractAddress,
       contractAddress: CONFIG.contractAddress,
-      explorerUrl: `https://www.midnightexplorer.com`
+      explorerUrl: `https://www.midnightexplorer.com`,
+      result: serializableResult
     });
 
   } catch (error) {
