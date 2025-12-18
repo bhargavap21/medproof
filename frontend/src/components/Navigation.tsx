@@ -147,7 +147,7 @@ const Navigation: React.FC = () => {
                 🌙
               </Typography>
               <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                {networkId === 'testnet' ? 'Midnight Testnet' : networkId ? 'Wrong Network' : 'Midnight Offline'}
+                {networkId === 'testnet' || networkId === 'testnet-02' ? 'Midnight Testnet' : networkId ? 'Wrong Network' : 'Midnight Offline'}
               </Typography>
             </Box>
           </Box>

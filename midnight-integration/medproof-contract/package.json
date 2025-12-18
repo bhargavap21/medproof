@@ -50,6 +50,7 @@
     "@midnight-ntwrk/wallet": "5.0.0",
     "@midnight-ntwrk/wallet-api": "5.0.0",
     "@midnight-ntwrk/zswap": "^4.0.0",
+    "bip39": "^3.1.0",
     "dotenv": "^16.5.0",
     "node-fetch": "^3.3.2",
     "pino": "^9.7.0",

@@ -124,7 +124,16 @@ class MidnightWalletService {
           }
         }
       } else {
-        console.warn('⚠️  Lace Wallet not detected');
+        console.warn('⚠️  Lace Wallet not detected - using backend mode');
+        // Auto-connect in backend mode (proof service handles wallet)
+        this.state = {
+          ...this.state,
+          isConnected: true,
+          walletAddress: 'Backend Wallet (Proof Service)',
+          networkId: 'testnet-02',
+          balance: null,
+        };
+        console.log('✅ Connected in backend mode');
       }
 
       this.notifyListeners();
