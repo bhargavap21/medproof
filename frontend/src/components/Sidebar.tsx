@@ -201,7 +201,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
   };
 
   const getNetworkStatus = () => {
-    if (networkId === 'testnet') return { status: 'Midnight Testnet', color: '#4caf50' };
+    if (networkId === 'testnet' || networkId === 'testnet-02') return { status: 'Midnight Testnet', color: '#4caf50' };
     if (networkId === 'mainnet') return { status: 'Midnight Mainnet', color: '#4caf50' };
     if (networkId) return { status: 'Wrong Network', color: '#ff9800' };
     return { status: 'Disconnected', color: '#f44336' };
